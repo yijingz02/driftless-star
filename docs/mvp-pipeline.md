@@ -317,7 +317,7 @@ From inside the `mvp/` directory, with Docker running:
 ```
 pixi run -e pipeline snakemake -n                         # dry-run: shows the plan without executing
 pixi run -e pipeline snakemake --cores 4                  # full pipeline, stages 2/3/4 in parallel
-pixi run -e pipeline snakemake clean                      # wipe every stage's output/ dir
+pixi run -e pipeline snakemake clean --cores 1            # wipe every stage's output/ dir
 ```
 
 > [!NOTE]
