@@ -269,3 +269,105 @@ This is run inside a script. See `mvp/stage5-transport/run_NEOPAX.py` as a refer
 > If `sfincs_jax` is used, then ideally, the script using NEOPAX runs a loop to optimize over different fluxes. While ideal, this is most computationally expensive.
 
 ---
+
+## Workflow Engine -- Snakemake
+
+**Code:** [Snakemake](https://snakemake.readthedocs.io/) 
+
+Automates the MVP forward pass end-to-end: `Stage 1 -> {Stage 2, Stage 3, Stage 4}` with the three downstream stages fanning out in parallel off the Stage 1 wout. Each stage runs inside its pre-built GHCR container image (`ghcr.io/rkhashmani/stellaforge:stage-N-<code>-{cpu,gpu}`) via `docker run`, so no local Pixi install is required beyond the `pipeline` env itself.
+
+> [!NOTE]
+> Stage 5 (NEOPAX) is not yet orchestrated.
+
+| Direction | Format              | Location                                                                                            |
+| --------- | ------------------- | --------------------------------------------------------------------------------------------------- |
+| **In**    | YAML config         | `mvp/config.yaml` (Currently: `run_name`, `stage3_backend`, `device`)                               |
+| **In**    | Workflow definition | `mvp/Snakefile`                                                                                     |
+| **In**    | Per-stage inputs    | `mvp/stage{1,3,4}-*/input/`                                                                         |
+| **Out**   | Stage 2 NetCDF      | `mvp/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                                           |
+| **Out**   | Stage 3 HDF5        | `mvp/stage3-neoclassical/output/sfincsOutput.h5`                                                    |
+| **Out**   | Stage 4 JSON + CSV  | `mvp/stage4-turbulence/output/hsx_run.{summary.json,diagnostics.csv}`                               |
+| **Out**   | Stage 4 cache       | `mvp/stage4-turbulence/output/wout_HSX_QHS_vacuum_ns201.eik.nc` (geometry, regenerated every rerun) |
+
+> [!NOTE]
+> `rule all` lists only the terminal artifacts above. Upstream intermediates (Stage 1's wout) are produced transitively because downstream rules declare them as `input:`.
+
+> [!NOTE]
+> Docker must be running on the host. On macOS / Windows that is Docker Desktop; on Linux, the docker engine or a rootless equivalent (podman aliased to `docker`). Windows users should invoke from WSL2 or Git Bash so bash expansions like `$PWD` resolve correctly inside the Snakefile's shell directives. HPC clusters that disallow Docker are a planned follow-up (Apptainer via `--sdm apptainer`).
+
+### How to Install
+
+From inside the `mvp/` directory
+
+```
+pixi install --environment pipeline
+pixi run -e pipeline dot -c
+```
+
+> [!NOTE]
+> `dot -c` is a one-time step required because Pixi deliberately skips package post-link scripts by default ([security rationale](https://pixi.sh/latest/reference/pixi_configuration/#run-post-link-scripts)). Graphviz's own post-link script normally calls `dot -c` to register its renderer plugins ([graphviz(1)](https://manpages.debian.org/bookworm/graphviz/dot.1.en.html) — `"-c  configure plugins"`).
+
+> [!NOTE]
+> `pipeline` pulls Snakemake from the **bioconda** channel (declared on the feature, not the workspace), not conda-forge where every other stage env lives.
+
+### How to Run
+
+From inside the `mvp/` directory, with Docker running:
+
+```
+pixi run -e pipeline snakemake -n                         # dry-run: shows the plan without executing
+pixi run -e pipeline snakemake --cores 4                  # full pipeline, stages 2/3/4 in parallel
+pixi run -e pipeline snakemake clean                      # wipe every stage's output/ dir
+```
+
+> [!NOTE]
+> Optional first step on a fresh clone: `pixi run initialize-example-inputs` seeds `stage{1,3,4}/input/` from the tracked `expected_input/` directories. Skip it if you populate `input/` yourself or if the task has already been run (it is idempotent and skip-if-populated, so running it twice is also safe).
+
+Per-invocation overrides via `--config`:
+
+```
+pixi run -e pipeline snakemake --cores 4 --config device=gpu              # use -gpu images + --gpus all
+pixi run -e pipeline snakemake --cores 4 --config stage3_backend=sfincs_fortran   # swap Stage 3 backend
+```
+
+Whole-file alternate config via `--configfile`:
+
+```
+pixi run -e pipeline snakemake --cores 4 --configfile config_bigtest.yaml
+```
+
+The alternate file is *layered on top of* `config.yaml`, not a replacement — list only the keys you want to change. Any key you omit inherits from `config.yaml`. You can also combine it with `--config` for per-invocation overrides on top of both files.
+
+> [!NOTE]
+> Precedence (highest wins): `--config key=value` on the CLI → `--configfile other.yaml` → `configfile: "config.yaml"` (in the Snakefile) → in-code defaults via `config.get(...)`. `--config` is how `device` works on machines with different hardware without committing host-specific defaults; `--configfile` is how named scenarios (e.g. `config_production.yaml`, `config_smalltest.yaml`) live alongside the base config without editing it.
+
+> [!NOTE]
+> `device=gpu` requires an NVIDIA host with `nvidia-container-toolkit` configured on the docker daemon.
+
+### Visualizing the file-flow graph
+
+`--filegraph` renders input/output *files* as nodes and rules as edges, so you see the data flow (wout → boozmn, sfincsOutput.h5, hsx_run.*) rather than the abstract job DAG.
+
+SVG:
+
+```
+pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tsvg > ./stellaforge_filegraph.svg'
+```
+
+PDF:
+
+```
+pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpdf > ./stellaforge_filegraph.pdf'
+```
+
+PNG:
+
+```
+pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpng -Gdpi=150 > ./stellaforge_filegraph.png'
+```
+
+
+> [!NOTE]
+> For the inverse view — *rules* as nodes, showing how they depend on each other irrespective of which files they share — swap `--filegraph` for `--rulegraph`. For the per-job DAG (every rule instance, one node each — most useful when wildcards produce many parallel jobs), swap for `--dag`.
+
+---
