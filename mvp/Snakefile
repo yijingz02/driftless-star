@@ -1,6 +1,4 @@
-# StellaForge MVP Snakemake workflow — Stages 1-4.
-# Run:       cd mvp && pixi run -e pipeline snakemake --cores 4
-# Full docs: docs/mvp-pipeline.md.
+# StellaForge MVP Snakemake workflow
 
 configfile: "config.yaml"
 
