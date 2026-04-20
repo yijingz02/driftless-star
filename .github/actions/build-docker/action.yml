@@ -12,6 +12,10 @@ inputs:
     description: CUDA version for GPU builds (leave empty for CPU builds)
     required: false
     default: ""
+  platforms:
+    description: Comma-separated target platforms (e.g. "linux/amd64,linux/arm64")
+    required: false
+    default: "linux/amd64"
   registry:
     description: Container registry
     required: false
@@ -60,6 +64,7 @@ runs:
       with:
         context: mvp
         file: mvp/Dockerfile
+        platforms: ${{ inputs.platforms }}
         build-args: |
           CUDA_VERSION=${{ inputs.cuda-version }}
           ENVIRONMENT=${{ inputs.environment }}
