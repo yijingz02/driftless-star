@@ -42,20 +42,20 @@ jobs:
         run: |
           matrix=$(cat <<'EOF'
           [
-            {"environment": "stage-1-vmec", "image-tag": "stage-1-vmec-cpu"},
-            {"environment": "stage-1-vmec-gpu", "cuda-version": "12", "image-tag": "stage-1-vmec-gpu"},
-            {"environment": "stage-1-desc", "image-tag": "stage-1-desc-cpu"},
-            {"environment": "stage-1-desc-gpu", "cuda-version": "12", "image-tag": "stage-1-desc-gpu"},
-            {"environment": "stage-2-booz", "image-tag": "stage-2-booz-cpu"},
-            {"environment": "stage-2-booz-jax", "image-tag": "stage-2-booz-jax-cpu"},
-            {"environment": "stage-2-booz-jax-gpu", "cuda-version": "12", "image-tag": "stage-2-booz-jax-gpu"},
-            {"environment": "stage-3-sfincs-fortran", "image-tag": "stage-3-sfincs-fortran-cpu"},
-            {"environment": "stage-3-sfincs", "image-tag": "stage-3-sfincs-cpu"},
-            {"environment": "stage-3-sfincs-gpu", "cuda-version": "12", "image-tag": "stage-3-sfincs-gpu"},
-            {"environment": "stage-4-spectrax", "image-tag": "stage-4-spectrax-cpu"},
-            {"environment": "stage-4-spectrax-gpu", "cuda-version": "12", "image-tag": "stage-4-spectrax-gpu"},
-            {"environment": "stage-5-neopax", "image-tag": "stage-5-neopax-cpu"},
-            {"environment": "stage-5-neopax-gpu", "cuda-version": "12", "image-tag": "stage-5-neopax-gpu"}
+            {"environment": "stage-1-vmec", "image-tag": "stage-1-vmec-cpu", "platforms": "linux/amd64,linux/arm64"},
+            {"environment": "stage-1-vmec-gpu", "cuda-version": "12", "image-tag": "stage-1-vmec-gpu", "platforms": "linux/amd64"},
+            {"environment": "stage-1-desc", "image-tag": "stage-1-desc-cpu", "platforms": "linux/amd64,linux/arm64"},
+            {"environment": "stage-1-desc-gpu", "cuda-version": "12", "image-tag": "stage-1-desc-gpu", "platforms": "linux/amd64"},
+            {"environment": "stage-2-booz", "image-tag": "stage-2-booz-cpu", "platforms": "linux/amd64,linux/arm64"},
+            {"environment": "stage-2-booz-jax", "image-tag": "stage-2-booz-jax-cpu", "platforms": "linux/amd64,linux/arm64"},
+            {"environment": "stage-2-booz-jax-gpu", "cuda-version": "12", "image-tag": "stage-2-booz-jax-gpu", "platforms": "linux/amd64"},
+            {"environment": "stage-3-sfincs-fortran", "image-tag": "stage-3-sfincs-fortran-cpu", "platforms": "linux/amd64,linux/arm64"},
+            {"environment": "stage-3-sfincs", "image-tag": "stage-3-sfincs-cpu", "platforms": "linux/amd64,linux/arm64"},
+            {"environment": "stage-3-sfincs-gpu", "cuda-version": "12", "image-tag": "stage-3-sfincs-gpu", "platforms": "linux/amd64"},
+            {"environment": "stage-4-spectrax", "image-tag": "stage-4-spectrax-cpu", "platforms": "linux/amd64,linux/arm64"},
+            {"environment": "stage-4-spectrax-gpu", "cuda-version": "12", "image-tag": "stage-4-spectrax-gpu", "platforms": "linux/amd64"},
+            {"environment": "stage-5-neopax", "image-tag": "stage-5-neopax-cpu", "platforms": "linux/amd64,linux/arm64"},
+            {"environment": "stage-5-neopax-gpu", "cuda-version": "12", "image-tag": "stage-5-neopax-gpu", "platforms": "linux/amd64"}
           ]
           EOF
           )
@@ -84,6 +84,7 @@ jobs:
           environment: ${{ matrix.environment }}
           image-tag: ${{ matrix.image-tag }}
           cuda-version: ${{ matrix.cuda-version || '' }}
+          platforms: ${{ matrix.platforms }}
           # Only deploy on the main project
           push: ${{ github.event_name != 'pull_request' && github.repository == 'rkhashmani/stellaforge' }}
           registry-username: ${{ github.repository_owner }}
