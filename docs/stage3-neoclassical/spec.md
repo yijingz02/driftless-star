@@ -103,10 +103,10 @@ Total `epstot` is the sum over classes.
 
 Reference: `stellarator_io_reference.tex`, Section 3.5.
 
-| Field | Type | Description | Source |
-|-------|------|-------------|--------|
-| `wout_*.nc` | NetCDF file | VMEC equilibrium output (referenced via `equilibriumFile` in the input file) | Stage 1 |
-| `input.*` | Fortran-style text file | Configuration with species, gradients, resolution, and `equilibriumFile` path | User-specified |
+| Field       | Type                    | Description                                                                                                                                                                                                                                                                                                                              | Source         |
+| ----------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `wout_*.nc` | NetCDF file             | VMEC equilibrium output. Passed to `sfincs_jax` via `--wout-path` in the Snakemake rule and pixi task (overrides the namelist `equilibriumFile` field both in memory and in the `input.namelist` dataset embedded in `sfincsOutput.h5`). The `sfincs_fortran` backend has no CLI override and reads `equilibriumFile` from the namelist. | Stage 1        |
+| `input.*`   | Fortran-style text file | Configuration with species, gradients, resolution, and a fallback `equilibriumFile` path                                                                                                                                                                                                                                                 | User-specified |
 
 Key namelist parameters: species charges/masses, $\hat{n}_s$, $\hat{T}_s$, their gradients, collision model, E_r guess, Phi1 switches, numerical resolution.
 
@@ -279,7 +279,7 @@ pixi run stage-3-sfincs
 ```
 
 > [!NOTE]
-> The Stage 3 namelist reads wout from `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
+> The pixi task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`. The namelist's `equilibriumFile` field is retained as a fallback for the `sfincs_fortran` backend and for direct `sfincs_jax` invocations that omit `--wout-path`.
 
 > [!NOTE]
 > Populate `stage3-neoclassical/input/` from the tracked `expected_input/` via `pixi run initialize-example-inputs` (optional) or manually before running.

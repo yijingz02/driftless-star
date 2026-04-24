@@ -18,6 +18,10 @@
   rN_wish = 0.12247
 
   VMECRadialOption = 0
+  ! equilibriumFile is overridden by `sfincs_jax --wout-path ...` in the Snakemake
+  ! stage3_sfincs rule and the `pixi run stage-3-sfincs` task. It remains here as
+  ! the fallback used by the sfincs_fortran backend (no CLI override) and by any
+  ! direct sfincs_jax invocation without --wout-path.
   equilibriumFile = "../../stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc"
   min_Bmn_to_load = 0
 

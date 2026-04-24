@@ -64,10 +64,10 @@ jax = ">=0.9.1,<0.10"
 h5py = ">=3.16.0,<4"
 
 [feature.sfincs-jax.pypi-dependencies]
-sfincs-jax = { git = "https://github.com/uwplasma/sfincs_jax", rev = "de50abd2ee9063176728805288e8bafe8e83cbc3" }
+sfincs-jax = { git = "https://github.com/uwplasma/sfincs_jax", rev = "eb9aee4b7606b7bf8ce721b316332e478f713f68" }
 
 [feature.sfincs-jax.tasks.stage-3-sfincs]
-cmd = "sfincs_jax stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201 --out stage3-neoclassical/output/sfincsOutput.h5"
+cmd = "sfincs_jax stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201 --out stage3-neoclassical/output/sfincsOutput.h5 --wout-path stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc"
 
 [feature.spectrax-gk.dependencies]
 numpy = ">=2.4.3,<3"

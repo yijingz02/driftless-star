@@ -142,7 +142,7 @@ pixi run stage-3-sfincs
 ```
 
 > [!NOTE]
-> The Stage 3 namelist reads wout from `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
+> The pixi `stage-3-sfincs` task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`, overriding the namelist `equilibriumFile` field. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`. The `sfincs_fortran` backend has no CLI override and still reads `equilibriumFile` from the namelist.
 
 > [!NOTE]
 > Populate `stage3-neoclassical/input/` from the tracked `expected_input/` via `pixi run initialize-example-inputs` (optional) or manually before running.

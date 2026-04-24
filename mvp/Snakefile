@@ -69,7 +69,8 @@ rule stage3_sfincs:
             shell(
                 f"{DOCKER_PREFIX} {STAGE3_JAX_IMG} "
                 "sfincs_jax {input.namelist} "
-                "--out stage3-neoclassical/output/sfincsOutput.h5"
+                "--out stage3-neoclassical/output/sfincsOutput.h5 "
+                "--wout-path {input.wout}"
             )
         else:  # sfincs_fortran
             shell(
