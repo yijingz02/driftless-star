@@ -2,8 +2,6 @@
 # CLI overrides win: `snakemake --config key=value` beats any value here.
 
 # Equilibrium / run identifier.
-# NOTE: stage2-boozer/example.py still hardcodes "HSX_QHS_vacuum_ns201";
-# changing run_name desyncs Stage 2 until the script is CLI-ified.
 run_name: HSX_QHS_vacuum_ns201
 
 # Stage 3 neoclassical backend. One of: sfincs_jax, sfincs_fortran.

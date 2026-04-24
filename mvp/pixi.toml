@@ -46,7 +46,7 @@ plotly = ">=6.6.0,<7"
 booz-xform-jax = { git = "https://github.com/uwplasma/booz_xform_jax.git", rev = "1f206597f2f28436e0e2124160c13de9ae63b2ea" }
 
 [feature.booz-xform-jax.tasks.stage-2-booz]
-cmd = "python stage2-boozer/example.py"
+cmd = "python stage2-boozer/run_boozer.py --wout stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc --output stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc"
 
 [feature.sfincs.dependencies]
 sfincs-mpich = ">=3.0.0,<4"

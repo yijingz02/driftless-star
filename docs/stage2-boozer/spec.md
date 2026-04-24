@@ -164,7 +164,7 @@ pixi run -e stage-2-booz-jax stage-2-booz
 ```
 
 > [!NOTE]
-> Stage 2's driver reads wout from `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
+> The Stage 2 JAX driver now takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
 
 **Input:** `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` (from Stage 1)
 **Output:** `mvp/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`

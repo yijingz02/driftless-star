@@ -39,7 +39,7 @@ Input configs, committed reference outputs, and runtime outputs under `mvp/`:
 ```
 mvp/
 ├── stage1-equilibrium/     expected_input/ + expected_output/ + (runtime)input/ + (runtime)output/
-├── stage2-boozer/          example.py + expected_output/ + (runtime)output/
+├── stage2-boozer/          run_boozer.py + example.py + expected_output/ + (runtime)output/
 ├── stage3-neoclassical/    expected_input/ + expected_output/ + run_monkes.py + (runtime)input/ + (runtime)output/
 ├── stage4-turbulence/      expected_input/ + expected_output/ + (runtime)input/ + (runtime)output/
 └── stage5-transport/       run_NEOPAX.py + expected_output/ + (runtime)output/
@@ -93,18 +93,18 @@ pixi run stage-1-vmec
 | **Out**   | NetCDF `boozmn_*.nc` | `mvp/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc` |
 
 > [!NOTE]
-> Stage 2's driver reads wout from `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
+> Stage 2's JAX driver takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
 
 ### How to Install
 
 ```
-pixi install --environment stage-2-booz
+pixi install --environment stage-2-booz-jax
 ```
 
 ### How to Run
 
 ```
-pixi run stage-2-booz
+pixi run -e stage-2-booz-jax stage-2-booz
 ```
 
 which is morally similar to
@@ -112,9 +112,17 @@ which is morally similar to
 ```python
 import booz_xform_jax as bx
 b=bx.Booz_xform()
-b.read_wout("wout_HSX_QHS_vacuum_ns201.nc")
+b.read_wout("stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc")
 b.run()
-b.write_boozmn("boozmn_HSX_QHS_vacuum_ns201.nc")
+b.write_boozmn("stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc")
+```
+
+or directly from the command line:
+
+```bash
+python stage2-boozer/run_boozer.py \
+  --wout stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc \
+  --output stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc
 ```
 
 ---

@@ -49,14 +49,12 @@ rule stage1_vmec:
         f"{DOCKER_PREFIX} {STAGE1_IMG} "
         "vmec_jax {input} --outdir stage1-equilibrium/output"
 
-# stage2-boozer/example.py hardcodes the HSX run name; changing
-# config['run_name'] silently desyncs Stage 2 until the script is CLI-ified.
 rule stage2_boozer:
     input:  f"stage1-equilibrium/output/wout_{RUN_NAME}.nc"
     output: f"stage2-boozer/output/boozmn_{RUN_NAME}.nc"
     shell:
         f"{DOCKER_PREFIX} {STAGE2_IMG} "
-        "python stage2-boozer/example.py"
+        "python stage2-boozer/run_boozer.py --wout {input} --output {output}"
 
 rule stage3_sfincs:
     input:
