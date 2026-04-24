@@ -39,7 +39,7 @@ Input configs, committed reference outputs, and runtime outputs under `mvp/`:
 ```
 mvp/
 ├── stage1-equilibrium/     expected_input/ + expected_output/ + (runtime)input/ + (runtime)output/
-├── stage2-boozer/          run_boozer.py + example.py + expected_output/ + (runtime)output/
+├── stage2-boozer/          run_boozer.py + expected_output/ + (runtime)output/
 ├── stage3-neoclassical/    expected_input/ + expected_output/ + run_monkes.py + (runtime)input/ + (runtime)output/
 ├── stage4-turbulence/      expected_input/ + expected_output/ + (runtime)input/ + (runtime)output/
 └── stage5-transport/       run_NEOPAX.py + expected_output/ + (runtime)output/
