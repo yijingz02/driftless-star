@@ -60,6 +60,38 @@ Reference: `stellarator_io_reference.tex`, Sections 3.9-3.10.
 | Collisionality | in config | Collision parameters | User-specified |
 | Beta | in config | Electromagnetic parameter | User-specified |
 
+Required input fields:
+- `species`: Defines the physical properties of the active plasma species.
+     - Default: ion with `charge=1.0, mass=1.0, density=1.0, temperature=1.0, tprim=2.49, fprim=0.8, nu=0.0, kinetic=True`. (The code seems to have a default. But does not seem to run with not specifying it.)
+- `geometry`: Specifies the magnetic equilibrium and flux surface geometry.
+- `physics`: Sets the global physical assumptions for the plasma.
+- `run`: Configures the execution mode.
+
+Optional input fields:
+- `grid`: Defines the resolution of the simulated phase-space.
+
+     - Defaults: `Nx=48, Ny=48, Nz=64, Lx=62.8, Ly=62.8, boundary="periodic", jtwist=None, non_twist=False, kxfac=1.0, z_min=-pi, z_max=pi, y0=None, ntheta=None, nperiod=None, zp=None`
+
+- `time`: Specifies time configurations.
+     - Defaults: `t_max=100.0, dt=0.1, method="rk2", sample_stride=1, diagnostics_stride=1, diagnostics=True, save_state=False, checkpoint=False, implicit_restart=20, implicit_preconditioner=None, implicit_solve_method="batched", use_diffrax=True, diffrax_solver="Dopri8", diffrax_adaptive=False, diffrax_rtol=1e-5, diffrax_atol=1e-7, diffrax_max_steps=4096, progress_bar=False, fixed_dt=True, dt_min=1e-7, dt_max=None, cfl=0.9, cfl_fac=None, collision_split=False, collision_scheme="implicit", gx_real_fft=True, nonlinear_dealias=True, laguerre_nonlinear_mode="grid"`
+
+- `init`: Controls how the initial perturbation is built.
+     - Defaults: `init_field="density", init_amp=1e-5, init_single=True, random_seed=22, gaussian_init=False, gaussian_width=0.5, gaussian_envelope_constant=1.0, gaussian_envelope_sine=0.0, kpar_init=0.0, init_file=None, init_file_scale=1.0, init_file_mode="replace", init_electrons_only=False`
+- `collisions`: Configures the collision operator. Controls collision, hypercollision, and end-damping parameters.
+     - Defaults: `nu_hermite=1.0, nu_laguerre=2.0, nu_hyper=0.0, p_hyper=4.0, nu_hyper_l=0.0, nu_hyper_m=1.0, nu_hyper_lm=0.0, p_hyper_l=6.0, p_hyper_m=None, p_hyper_lm=6.0, D_hyper=0.0, p_hyper_kperp=2.0, hypercollisions_const=0.0, hypercollisions_kz=1.0, damp_ends_amp=0.1, damp_ends_widthfrac=0.125, damp_ends_scale_by_dt=False`. Note `p_hyper_m=None` is not a hard numeric default; the runtime follows the GX fallback min(20, Nm/2) when it is omitted.
+- `normalization`: Sets the reference units used to non-dimensionalize the equations. 
+     - Defaults: `contract="cyclone", rho_star=None, omega_d_scale=None, omega_star_scale=None, diagnostic_norm="gx", flux_scale=1.0, wphi_scale=1.0`
+- `terms`: Controls which RHS terms are enabled, as multiplicative weights.
+     - Defaults: `streaming=1.0, mirror=1.0, curvature=1.0, gradb=1.0, diamagnetic=1.0, , collisions=1.0, hypercollisions=1.0, hyperdiffusion=0.0, end_damping=1.0, apar=1.0, bpar=1.0, nonlinear=0.0`
+- `experts`: Advanced special-purpose controls.
+     - Defaults: `fixed_mode=False, iky_fixed=None, ikx_fixed=None, dealias_kz=False`
+
+### Input Validation
+
+Script `run_io_validation_checks.py` performs the follow tests:
+
+1. Checks missing parameters and args in the toml config file.
+
 ### `GX` Inputs (Alternative)
 
 | Field | Type | Description | Source |
@@ -86,19 +118,22 @@ Reference: `stellarator_io_reference.tex`, Sections 3.9-3.10.
 
 ### SPECTRAX-GK Outputs
 
-| Field | Type | Description | Used As |
-|-------|------|-------------|---------|
-| `gamma` | scalar/array | Linear growth rate | Objective / screening |
-| `omega` | scalar/array | Real frequency | Diagnostic |
-| `gamma_t` | 1D array (time) | Growth rate time trace | Convergence check |
-| `omega_t` | 1D array (time) | Frequency time trace | Convergence check |
-| `Wg_t` | 1D array (time) | Free energy (g) trace | Diagnostic |
-| `Wphi_t` | 1D array (time) | Free energy (phi) trace | Diagnostic |
-| `Wapar_t` | 1D array (time) | Free energy (A_parallel) trace | Diagnostic |
-| `heat_flux_t` | 1D array (time) | Heat flux time trace | **Transport input** |
-| `particle_flux_t` | 1D array (time) | Particle flux time trace | **Transport input** |
+| Field | Type | Description | Used As | Normalization | Units | 
+|-------|------|-------------|---------|---------------|-------|
+| `t` | 1D array (time) | Simulation time | Time axis / Independent variable | Dimensionless normalized with $R_0/v_{th}$, where $v_{th} = \sqrt{T/m}$, $T$ is the temperature, $m$ is mass, and $R_0$ is the radius.
+| `dt` | 1D array (time) | Time step size | Diagnostic | Same as $t$ | 
+| `gamma` | 1D array (time) | Growth rate time trace | Objective / screening / Convergence check | Normalized with $v_{th}/R_0$ |
+| `omega` | 1D array (time) | Frequency time trace | Diagnostic / Convergence check | Same as gamma |
+| `Wg` | 1D array (time) | Free energy (g) trace | Diagnostic | Normalization specified in toml file |
+| `Wphi` | 1D array (time) | Free energy (phi) trace | Diagnostic | Normalization specified in toml file |
+| `Wapar` | 1D array (time) | Free energy (A_parallel) trace | Diagnostic | Normalization specified in toml file |
+| `energy` | 1D array (time) | Free energy trace | Diagnostic | Normalization specified in toml file |
+| `heat_flux` | 1D array (time) | Heat flux time trace | **Transport input** | Normalization specified in toml file |
+| `particle_flux` | 1D array (time) | Particle flux time trace | **Transport input** | Normalization specified in toml file |
+| `heat_flux_s0` | 1D array (time) | Species-resolved particle flux time trace | Diagnostic | Normalization specified in toml file |
+| `particle_flux_s0` | 1D array (time) | Species-resolved particle flux time trace |  Diagnostic | Normalization specified in toml file |
 
-Optional CSV output: time, growth rate, frequency, free energy, species-resolved heat and particle flux.
+Output in CSV files, along with a json file that records the info for only last time step.
 
 The natural downstream contract is the same as `GX`: turbulent heat and particle flux (steady-state values).
 
@@ -164,8 +199,13 @@ Reference: `stellarator_workflow.tex`, Section 4.7.
 
 ## Convergence & Validity
 
-> [!TODO]
-> Document convergence criteria, resolution requirements, known failure modes, and benchmark comparisons.
+Script `run_physics_validation_checks.py` performs the follow tests:
+
+1. Resolution convergence: rerun the same runtime case on a small sequence of
+   increasing resolutions and verify that late-time diagnostics do not shift
+   much between refinement levels.
+2. Flux stability: verify that the late-time heat/particle flux is with small
+   relative variance
 
 ---
 
