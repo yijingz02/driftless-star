@@ -13,27 +13,6 @@ StellaForge is an open-source pipeline for stellarator design, connecting five p
 
 StellaForge is a **recipe repo**: it contains environment definitions, container builds, and orchestration logic, but the upstream solver codes are installed as dependencies. The companion `stellarator_workflow/` submodule contains TeX manuscripts defining the physics equations and I/O contracts. See `docs/guide.md` for the full pipeline design and contributor workflow.
 
-### Repository Structure
-
-```
-StellaForge/
-├── CLAUDE.md                    # This file
-├── docs/                        # Project documentation
-│   ├── guide.md                 # Pipeline design, contributor workflow, container architecture
-│   ├── mvp-pipeline.md          # MVP I/O reference with Pixi install/run commands
-│   ├── potential_issues.md      # Known cross-stage compatibility issues
-│   └── stage{N}-{name}/        # Per-stage specifications
-│       └── spec.md
-├── mvp/                         # Pixi environments, Dockerfile, and MVP test data
-│   ├── pixi.toml                # Per-stage environment definitions and dependency pins
-│   ├── pixi.lock                # Digest-level lock file for reproducible builds
-│   ├── Dockerfile               # Single templated Dockerfile (all stages via build args)
-│   └── stage{N}-{name}/        # expected_input/, expected_output/ (reference), input/, output/ (runtime, gitignored)
-├── .github/                     # CI workflows for container builds
-├── stellarator_workflow/        # Read-only TeX reference (git submodule)
-└── LICENSE
-```
-
 ### The 5 Pipeline Stages
 
 | Stage | Name | Primary Code | Alternatives | Spec |
@@ -55,6 +34,7 @@ Forward-pass chain: `vmec_jax` -> `booz_xform_jax` -> (`sfincs_jax` / `monkes`) 
 ### Naming Conventions
 
 - Stage directories: `stage{N}-{name}` (e.g., `stage1-equilibrium`)
+- Per-stage data subdirectories (under `mvp/stage{N}-{name}/`): `expected_input/` and `expected_output/` hold tracked reference data; `input/` and `output/` are runtime working directories (gitignored). Seed `input/` via `pixi run initialize-example-inputs`.
 - Container images: `ghcr.io/rkhashmani/stellaforge:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`) (on GHCR)
 - W&B projects: `stellaforge-stage{N}-{name}`
 - Output directories: `{run_dir}/stage{N}_{name}/`
@@ -80,6 +60,8 @@ Snakemake rules define which files connect which stages. Each stage's `spec.md` 
 - Read `docs/guide.md` first for the big picture and contributor workflow.
 - Read `docs/mvp-pipeline.md` for MVP I/O reference, Pixi install/run commands.
 - Each stage has its own spec in `docs/stage{N}-{name}/spec.md`.
+- See `docs/container-images.md` for Docker/Apptainer build and run examples.
+- See `docs/potential_issues.md` for known cross-stage compatibility issues.
 - The `stellarator_workflow/` submodule is read-only reference material:
   - `stellarator_workflow.tex` -- governing equations and code details
   - `stellarator_io_reference.tex` -- I/O contracts and handoff specifications

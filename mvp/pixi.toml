@@ -46,7 +46,7 @@ plotly = ">=6.6.0,<7"
 booz-xform-jax = { git = "https://github.com/uwplasma/booz_xform_jax.git", rev = "1f206597f2f28436e0e2124160c13de9ae63b2ea" }
 
 [feature.booz-xform-jax.tasks.stage-2-booz]
-cmd = "python stage2-boozer/example.py"
+cmd = "python stage2-boozer/run_boozer.py --wout stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc --output stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc"
 
 [feature.sfincs.dependencies]
 sfincs-mpich = ">=3.0.0,<4"
@@ -64,10 +64,10 @@ jax = ">=0.9.1,<0.10"
 h5py = ">=3.16.0,<4"
 
 [feature.sfincs-jax.pypi-dependencies]
-sfincs-jax = { git = "https://github.com/uwplasma/sfincs_jax", rev = "de50abd2ee9063176728805288e8bafe8e83cbc3" }
+sfincs-jax = { git = "https://github.com/uwplasma/sfincs_jax", rev = "eb9aee4b7606b7bf8ce721b316332e478f713f68" }
 
 [feature.sfincs-jax.tasks.stage-3-sfincs]
-cmd = "sfincs_jax stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201 --out stage3-neoclassical/output/sfincsOutput.h5"
+cmd = "sfincs_jax stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201 --out stage3-neoclassical/output/sfincsOutput.h5 --wout-path stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc"
 
 [feature.spectrax-gk.dependencies]
 numpy = ">=2.4.3,<3"
@@ -104,6 +104,14 @@ orthax = ">=0.2.8, <0.3"
 inductiva = ">=0.18.12, <0.19"
 neopax = { git = "https://github.com/uwplasma/NEOPAX.git", rev = "5ec4cc3c5583121c5c454358defa7ab1af40c211" }
 
+[feature.pipeline]
+channels = ["conda-forge", "bioconda"]
+
+[feature.pipeline.dependencies]
+snakemake-minimal = ">=8,<10"
+graphviz = ">=9,<15"
+pytest = ">=8,<9"
+
 [feature.cuda]
 platforms = ["linux-64"]
 [feature.cuda.system-requirements]
@@ -124,3 +132,4 @@ stage-4-spectrax = {features = ["spectrax-gk"], no-default-feature = true}
 stage-4-spectrax-gpu = {features = ["spectrax-gk", "cuda"], no-default-feature = true }
 stage-5-neopax = {features = ["neopax"], no-default-feature = true}
 stage-5-neopax-gpu = {features = ["neopax", "cuda"], no-default-feature = true }
+pipeline = {features = ["pipeline"], no-default-feature = true}
