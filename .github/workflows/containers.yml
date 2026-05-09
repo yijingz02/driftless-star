@@ -7,18 +7,18 @@ on:
     tags:
       - 'v*'
     paths:
-      - 'mvp/pixi.toml'
-      - 'mvp/pixi.lock'
-      - 'mvp/Dockerfile'
-      - 'mvp/.dockerignore'
-      - 'mvp/apptainer.def'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'apptainer.def'
   pull_request:
     paths:
-      - 'mvp/pixi.toml'
-      - 'mvp/pixi.lock'
-      - 'mvp/Dockerfile'
-      - 'mvp/.dockerignore'
-      - 'mvp/apptainer.def'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'apptainer.def'
   release:
     types: [published]
   workflow_dispatch:

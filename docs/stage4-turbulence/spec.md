@@ -33,7 +33,7 @@ Reference: `stellarator_workflow.tex`, Section 4.7; `stellarator_io_reference.te
 
 ### Installation & Platform
 
-**`SPECTRAX-GK`:** Install via the Pixi environment. From inside `mvp/`:
+**`SPECTRAX-GK`:** Install via the Pixi environment. From the repo root:
 
 ```
 pixi install --environment stage-4-spectrax
@@ -178,7 +178,7 @@ Reference: `stellarator_workflow.tex`, Section 4.7.
 
 ## Scripts & Workflows
 
-**`SPECTRAX-GK` (via Pixi):** From inside `mvp/`:
+**`SPECTRAX-GK` (via Pixi):** From the repo root:
 
 ```
 pixi run stage-4-spectrax
@@ -193,8 +193,8 @@ which executes something morally equivalent to:
 spectrax-gk run --config ./stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml --out stage4-turbulence/output/hsx_run
 ```
 
-**Input:** `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` + `mvp/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml`
-**Output:** `mvp/stage4-turbulence/output/hsx_run.summary.json` + `mvp/stage4-turbulence/output/hsx_run.diagnostics.csv`
+**Input:** `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` + `stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml`
+**Output:** `stages/stage4-turbulence/output/hsx_run.summary.json` + `stages/stage4-turbulence/output/hsx_run.diagnostics.csv`
 
 > [!NOTE]
 > The TOML's `vmec_file` points into `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`. The VMEC geometry path also requires `booz_xform_jax` at runtime (lazy dependency).
@@ -217,11 +217,11 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## Container Specification (Phase 2)
 
-**`SPECTRAX-GK`:** Built from the single templated `mvp/Dockerfile` using build arguments:
+**`SPECTRAX-GK`:** Built from the single templated `Dockerfile` using build arguments:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-4-spectrax mvp/        # CPU
-docker build --build-arg ENVIRONMENT=stage-4-spectrax-gpu --build-arg CUDA_VERSION=12 mvp/  # GPU
+docker build --build-arg ENVIRONMENT=stage-4-spectrax .        # CPU
+docker build --build-arg ENVIRONMENT=stage-4-spectrax-gpu --build-arg CUDA_VERSION=12 .  # GPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-4-spectrax-cpu` and `stage-4-spectrax-gpu`. CI builds via `.github/workflows/containers.yml`.

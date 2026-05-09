@@ -32,13 +32,13 @@ Reference: `stellarator_workflow/stellarator_workflow.tex`, Section 4.1 (`VMEC++
 
 ### Installation & Platform
 
-**`vmec_jax`:** Install via the Pixi environment. From inside `mvp/`:
+**`vmec_jax`:** Install via the Pixi environment. From the repo root:
 
 ```
 pixi install --environment stage-1-vmec
 ```
 
-**`desc-opt`:** Install via the Pixi environment. From inside `mvp/`:
+**`desc-opt`:** Install via the Pixi environment. From the repo root:
 
 ```
 pixi install --environment stage-1-desc
@@ -215,7 +215,7 @@ Reference: `stellarator_workflow.tex`, Sections 4.1-4.2.
 
 ## Scripts & Workflows
 
-**`vmec_jax` (via Pixi):** From inside `mvp/`:
+**`vmec_jax` (via Pixi):** From the repo root:
 
 ```
 pixi run stage-1-vmec
@@ -224,8 +224,8 @@ pixi run stage-1-vmec
 > [!NOTE]
 > Populate `stage1-equilibrium/input/` from the tracked `expected_input/` via `pixi run initialize-example-inputs` (optional) or manually before running.
 
-**Input:** `mvp/stage1-equilibrium/input/input.HSX_QHS_vacuum_ns201`
-**Output:** `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`
+**Input:** `stages/stage1-equilibrium/input/input.HSX_QHS_vacuum_ns201`
+**Output:** `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
@@ -245,11 +245,11 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## Container Specification (Phase 2)
 
-**`vmec_jax`:** Built from the single templated `mvp/Dockerfile` using a build process morally equivalent to:
+**`vmec_jax`:** Built from the single templated `Dockerfile` using a build process morally equivalent to:
 
 ```
-docker build --file mvp/Dockerfile --build-arg ENVIRONMENT=stage-1-vmec --platform linux/amd64 --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu mvp/  # CPU
-docker build --file mvp/Dockerfile --build-arg CUDA_VERSION=12 --build-arg ENVIRONMENT=stage-1-vmec-gpu --platform linux/amd64 --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-gpu mvp/  # GPU
+docker build --file Dockerfile --build-arg ENVIRONMENT=stage-1-vmec --platform linux/amd64 --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu .  # CPU
+docker build --file Dockerfile --build-arg CUDA_VERSION=12 --build-arg ENVIRONMENT=stage-1-vmec-gpu --platform linux/amd64 --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-gpu .  # GPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu` and `stage-1-vmec-gpu`. CI builds via `.github/workflows/containers.yml`.

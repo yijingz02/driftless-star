@@ -32,12 +32,12 @@
                               n(r), T(r), E_r(r), P_fus, Q
 ```
 
-## MVP Test Data
+## Stage Test Data
 
-Input configs, committed reference outputs, and runtime outputs under `mvp/`:
+Input configs, committed reference outputs, and runtime outputs under `stages/`:
 
 ```
-mvp/
+stages/
 ├── stage1-equilibrium/     expected_input/ + expected_output/ + (runtime)input/ + (runtime)output/
 ├── stage2-boozer/          run_boozer.py + expected_output/ + (runtime)output/
 ├── stage3-neoclassical/    expected_input/ + expected_output/ + run_monkes.py + (runtime)input/ + (runtime)output/
@@ -57,16 +57,16 @@ mvp/
 
 | Direction                     | Format                                    | Location                                                                        |
 | ----------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------- |
-| **In**                        | Fortran-style Text                        | `mvp/stage1-equilibrium/input/input.HSX_QHS_vacuum_ns201`              |
-| **Out**                       | NetCDF `wout_*.nc` (similar to hdf5 file) | `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`  |
-| **Additional Out** (optional) | Text (terminal output)                    | `mvp/stage1-equilibrium/output/optional_terminal_output.vmec` |
+| **In**                        | Fortran-style Text                        | `stages/stage1-equilibrium/input/input.HSX_QHS_vacuum_ns201`              |
+| **Out**                       | NetCDF `wout_*.nc` (similar to hdf5 file) | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`  |
+| **Additional Out** (optional) | Text (terminal output)                    | `stages/stage1-equilibrium/output/optional_terminal_output.vmec` |
 
 > [!NOTE]
 > `HSX_QHS_vacuum_ns201` is an example name. This can be changed. As can the entirety of the name `optional_terminal_output.vmec`.
 
 ### How to Install
 
-From inside the `mvp/` directory
+From the repo root
 
 ```
 pixi install --environment stage-1-vmec
@@ -89,8 +89,8 @@ pixi run stage-1-vmec
 
 | Direction | Format               | Location                                                                          |
 | --------- | -------------------- | --------------------------------------------------------------------------------- |
-| **In**    | NetCDF `wout_*.nc`   | `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`    |
-| **Out**   | NetCDF `boozmn_*.nc` | `mvp/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc` |
+| **In**    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`    |
+| **Out**   | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc` |
 
 > [!NOTE]
 > Stage 2's JAX driver takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
@@ -112,17 +112,17 @@ which is morally similar to
 ```python
 import booz_xform_jax as bx
 b=bx.Booz_xform()
-b.read_wout("stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc")
+b.read_wout("stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc")
 b.run()
-b.write_boozmn("stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc")
+b.write_boozmn("stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc")
 ```
 
 or directly from the command line:
 
 ```bash
-python stage2-boozer/run_boozer.py \
-  --wout stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc \
-  --output stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc
+python stages/stage2-boozer/run_boozer.py \
+  --wout stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc \
+  --output stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc
 ```
 
 ---
@@ -133,9 +133,9 @@ python stage2-boozer/run_boozer.py \
 
 | Direction | Format                       | Location                                                                       |
 | --------- | ---------------------------- | ------------------------------------------------------------------------------ |
-| **In**    | NetCDF `wout_*.nc`           | `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` |
-| **In**    | Fortran-style Text `input.*` | `mvp/stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201`          |
-| **Out**   | HDF5 `sfincsOutput.h5`       | `mvp/stage3-neoclassical/output/sfincsOutput.h5`           |
+| **In**    | NetCDF `wout_*.nc`           | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` |
+| **In**    | Fortran-style Text `input.*` | `stages/stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201`          |
+| **Out**   | HDF5 `sfincsOutput.h5`       | `stages/stage3-neoclassical/output/sfincsOutput.h5`           |
 
 #### How to Install
 
@@ -160,9 +160,9 @@ pixi run stage-3-sfincs
 
 | Direction | Format                       | Location                                                                       |
 | --------- | ---------------------------- | ------------------------------------------------------------------------------ |
-| **In**    | NetCDF `wout_*.nc`           | `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` |
-| **In**    | Fortran-style Text `input.*` | `mvp/stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201`          |
-| **Out**   | HDF5 `sfincsOutput.h5`       | `mvp/stage3-neoclassical/output/sfincsOutput.h5`           |
+| **In**    | NetCDF `wout_*.nc`           | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` |
+| **In**    | Fortran-style Text `input.*` | `stages/stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201`          |
+| **Out**   | HDF5 `sfincsOutput.h5`       | `stages/stage3-neoclassical/output/sfincsOutput.h5`           |
 
 #### How to Install
 
@@ -187,9 +187,9 @@ pixi run stage-3-sfincs-fortran
 
 | Direction | Format               | Location                                                                                         |
 | --------- | -------------------- | ------------------------------------------------------------------------------------------------ |
-| **In**    | NetCDF `wout_*.nc`   | `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`                   |
-| **In**    | NetCDF `boozmn_*.nc` | `mvp/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                |
-| **Out**   | HDF5 `D_ij.h5`       | `mvp/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` |
+| **In**    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`                   |
+| **In**    | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                |
+| **Out**   | HDF5 `D_ij.h5`       | `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` |
 
 > [!NOTE]
 > The inputs come from both Stage 1 and Stage 2.
@@ -203,7 +203,7 @@ pip install .
 
 #### How to Run
 
-Monkes is a little more involved. See `mvp/stage3-neoclassical/run_monkes.py`
+Monkes is a little more involved. See `stages/stage3-neoclassical/run_monkes.py`
 
 We basically call it inside a python loop to use Monkes to generate a database across different radial positions, electric fields, and collisionality, but it uses the same 2 input files for the entire loop.
 
@@ -215,10 +215,10 @@ We basically call it inside a python loop to use Monkes to generate a database a
 
 | Direction | Format             | Location                                                                           |
 | --------- | ------------------ | ---------------------------------------------------------------------------------- |
-| **In**    | NetCDF `wout_*.nc` | `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`     |
-| **In**    | TOML config        | `mvp/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml` |
-| **Out**   | Summary `JSON`     | `mvp/stage4-turbulence/output/hsx_run.summary.json`           |
-| **Out**   | `csv`              | `mvp/stage4-turbulence/output/hsx_run.diagnostics.csv`        |
+| **In**    | NetCDF `wout_*.nc` | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`     |
+| **In**    | TOML config        | `stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml` |
+| **Out**   | Summary `JSON`     | `stages/stage4-turbulence/output/hsx_run.summary.json`           |
+| **Out**   | `csv`              | `stages/stage4-turbulence/output/hsx_run.diagnostics.csv`        |
 
 > [!NOTE]
 > The TOML's `vmec_file` points into `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
@@ -252,10 +252,10 @@ spectrax-gk run --config runtime_hsx_nonlinear_vmec_geometry.toml --out output/h
 
 | Direction                                 | Format               | Location                                                                                         |
 | ----------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
-| **In**                                    | NetCDF `wout_*.nc`   | `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`                   |
-| **In**                                    | NetCDF `boozmn_*.nc` | `mvp/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                |
-| **In** (Only needed if `monkes` is used.) | HDF5 `D_ij.h5`       | `mvp/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` |
-| **Out**                                   | HDF5 `profiles_*.h5` | `mvp/stage5-transport/output/NEOPAX_output.h5`                                   |
+| **In**                                    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`                   |
+| **In**                                    | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                |
+| **In** (Only needed if `monkes` is used.) | HDF5 `D_ij.h5`       | `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` |
+| **Out**                                   | HDF5 `profiles_*.h5` | `stages/stage5-transport/output/NEOPAX_output.h5`                                   |
 > [!NOTE]
 > The inputs come from Stage 1, Stage 2, and Stage 3.
 
@@ -267,7 +267,7 @@ pixi install --environment stage-5-neopax
 
 ### How to Run
 
-This is run inside a script. See `mvp/stage5-transport/run_NEOPAX.py` as a reference.
+This is run inside a script. See `stages/stage5-transport/run_NEOPAX.py` as a reference.
 
 > [!NOTE]
 > `NEOPAX`, being the final stage, has additional complexities and variabilities in the workflow.
@@ -289,13 +289,13 @@ Automates the MVP forward pass end-to-end: `Stage 1 -> {Stage 2, Stage 3, Stage 
 
 | Direction | Format              | Location                                                                                            |
 | --------- | ------------------- | --------------------------------------------------------------------------------------------------- |
-| **In**    | YAML config         | `mvp/config.yaml` (Currently: `run_name`, `stage3_backend`, `device`)                               |
-| **In**    | Workflow definition | `mvp/Snakefile`                                                                                     |
-| **In**    | Per-stage inputs    | `mvp/stage{1,3,4}-*/input/`                                                                         |
-| **Out**   | Stage 2 NetCDF      | `mvp/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                                           |
-| **Out**   | Stage 3 HDF5        | `mvp/stage3-neoclassical/output/sfincsOutput.h5`                                                    |
-| **Out**   | Stage 4 JSON + CSV  | `mvp/stage4-turbulence/output/hsx_run.{summary.json,diagnostics.csv}`                               |
-| **Out**   | Stage 4 cache       | `mvp/stage4-turbulence/output/wout_HSX_QHS_vacuum_ns201.eik.nc` (geometry, regenerated every rerun) |
+| **In**    | YAML config         | `config.yaml` (Currently: `run_name`, `stage3_backend`, `device`)                                   |
+| **In**    | Workflow definition | `Snakefile`                                                                                         |
+| **In**    | Per-stage inputs    | `stages/stage{1,3,4}-*/input/`                                                                         |
+| **Out**   | Stage 2 NetCDF      | `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                                           |
+| **Out**   | Stage 3 HDF5        | `stages/stage3-neoclassical/output/sfincsOutput.h5`                                                    |
+| **Out**   | Stage 4 JSON + CSV  | `stages/stage4-turbulence/output/hsx_run.{summary.json,diagnostics.csv}`                               |
+| **Out**   | Stage 4 cache       | `stages/stage4-turbulence/output/wout_HSX_QHS_vacuum_ns201.eik.nc` (geometry, regenerated every rerun) |
 
 > [!NOTE]
 > `rule all` lists only the terminal artifacts above. Upstream intermediates (Stage 1's wout) are produced transitively because downstream rules declare them as `input:`.
@@ -305,7 +305,7 @@ Automates the MVP forward pass end-to-end: `Stage 1 -> {Stage 2, Stage 3, Stage 
 
 ### How to Install
 
-From inside the `mvp/` directory
+From the repo root
 
 ```
 pixi install --environment pipeline
@@ -320,7 +320,7 @@ pixi run -e pipeline dot -c
 
 ### How to Run
 
-From inside the `mvp/` directory, with Docker running:
+From the repo root, with Docker running:
 
 ```
 pixi run -e pipeline snakemake -n                         # dry-run: shows the plan without executing

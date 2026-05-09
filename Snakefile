@@ -37,66 +37,66 @@ DOCKER_PREFIX = (
 # become transitive intermediates and drop out of `rule all`.
 rule all:
     input:
-        f"stage2-boozer/output/boozmn_{RUN_NAME}.nc",
-        "stage3-neoclassical/output/sfincsOutput.h5",
-        "stage4-turbulence/output/hsx_run.summary.json",
-        "stage4-turbulence/output/hsx_run.diagnostics.csv",
+        f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
+        "stages/stage3-neoclassical/output/sfincsOutput.h5",
+        "stages/stage4-turbulence/output/hsx_run.summary.json",
+        "stages/stage4-turbulence/output/hsx_run.diagnostics.csv",
 
 rule stage1_vmec:
-    input:  f"stage1-equilibrium/input/input.{RUN_NAME}"
-    output: f"stage1-equilibrium/output/wout_{RUN_NAME}.nc"
+    input:  f"stages/stage1-equilibrium/input/input.{RUN_NAME}"
+    output: f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc"
     shell:
         f"{DOCKER_PREFIX} {STAGE1_IMG} "
-        "vmec_jax {input} --outdir stage1-equilibrium/output"
+        "vmec_jax {input} --outdir stages/stage1-equilibrium/output"
 
 rule stage2_boozer:
-    input:  f"stage1-equilibrium/output/wout_{RUN_NAME}.nc"
-    output: f"stage2-boozer/output/boozmn_{RUN_NAME}.nc"
+    input:  f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc"
+    output: f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc"
     shell:
         f"{DOCKER_PREFIX} {STAGE2_IMG} "
-        "python stage2-boozer/run_boozer.py --wout {input} --output {output}"
+        "python stages/stage2-boozer/run_boozer.py --wout {input} --output {output}"
 
 rule stage3_sfincs:
     input:
-        namelist = f"stage3-neoclassical/input/input.{RUN_NAME}",
-        wout     = f"stage1-equilibrium/output/wout_{RUN_NAME}.nc",
+        namelist = f"stages/stage3-neoclassical/input/input.{RUN_NAME}",
+        wout     = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
     output:
-        "stage3-neoclassical/output/sfincsOutput.h5",
+        "stages/stage3-neoclassical/output/sfincsOutput.h5",
     run:
         if STAGE3_BACKEND == "sfincs_jax":
             shell(
                 f"{DOCKER_PREFIX} {STAGE3_JAX_IMG} "
                 "sfincs_jax {input.namelist} "
-                "--out stage3-neoclassical/output/sfincsOutput.h5 "
+                "--out stages/stage3-neoclassical/output/sfincsOutput.h5 "
                 "--wout-path {input.wout}"
             )
         else:  # sfincs_fortran
             shell(
                 f"{DOCKER_PREFIX} {STAGE3_FORTRAN_IMG} "
-                'sh -c "mkdir -p stage3-neoclassical/output && '
-                "cp {input.namelist} stage3-neoclassical/output/input.namelist && "
-                'cd stage3-neoclassical/output && sfincs"'
+                'sh -c "mkdir -p stages/stage3-neoclassical/output && '
+                "cp {input.namelist} stages/stage3-neoclassical/output/input.namelist && "
+                'cd stages/stage3-neoclassical/output && sfincs"'
             )
 
 # eik_cache is geometry derived from wout; delete it before each rerun so
 # spectrax-gk regenerates from the current wout rather than reusing stale cache.
 rule stage4_spectrax:
     input:
-        toml = "stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml",
-        wout = f"stage1-equilibrium/output/wout_{RUN_NAME}.nc",
+        toml = "stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml",
+        wout = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
     output:
-        summary     = "stage4-turbulence/output/hsx_run.summary.json",
-        diagnostics = "stage4-turbulence/output/hsx_run.diagnostics.csv",
-        eik_cache   = f"stage4-turbulence/output/wout_{RUN_NAME}.eik.nc",
+        summary     = "stages/stage4-turbulence/output/hsx_run.summary.json",
+        diagnostics = "stages/stage4-turbulence/output/hsx_run.diagnostics.csv",
+        eik_cache   = f"stages/stage4-turbulence/output/wout_{RUN_NAME}.eik.nc",
     shell:
         "rm -f {output.eik_cache} && "
         f"{DOCKER_PREFIX} {STAGE4_IMG} "
         "spectrax-gk run --config {input.toml} "
-        "--out stage4-turbulence/output/hsx_run"
+        "--out stages/stage4-turbulence/output/hsx_run"
 
 rule clean:
     shell:
         """
-        rm -rf stage1-equilibrium/output stage2-boozer/output \
-               stage3-neoclassical/output stage4-turbulence/output
+        rm -rf stages/stage1-equilibrium/output stages/stage2-boozer/output \
+               stages/stage3-neoclassical/output stages/stage4-turbulence/output
         """
