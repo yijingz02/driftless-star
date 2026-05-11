@@ -12,9 +12,12 @@
 
 mpol=10
 ntor=10
-ns_array   =   11,    25,    49,    75,   101,   151,   201
-niter_array= 1000,  1000,  1500,  2000,  2500,  2500, 10000
-ftol_array = 1e-7, 1e-30, 1e-30, 1e-30, 1e-30, 1e-30, 1e-12
+! Reduced-accuracy single-stage continuation for the CI smoke test.
+! Converges in ~70 iters at FTOL=1e-4 on both CPU and GPU vmec_jax;
+! the canonical 7-stage continuation lives in input.HSX_QHS_vacuum_ns201.
+ns_array   = 11
+niter_array= 1000
+ftol_array = 1e-4
 
 !  FTOL_ARRAY =  1.0e-5  1.0e-6  1.E-8  1.0e-10  1.0e-13
 !  NITER      =  2500
