@@ -4,20 +4,20 @@
 
 ### Building Docker container images
 
-From the top level directory
+From the repo root
 
 ```
-docker build --file mvp/Dockerfile --build-arg <build-args> --tag <tag> <context path>
+docker build --file Dockerfile --build-arg <build-args> --tag <tag> <context path>
 ```
 
 Example:
 
 ```
 docker build \
-    --file mvp/Dockerfile \
+    --file Dockerfile \
     --build-arg ENVIRONMENT="stage-1-vmec" \
     --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu \
-    mvp/
+    .
 ```
 
 ### Pulling Docker container images from a registry

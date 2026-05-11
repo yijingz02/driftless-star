@@ -7,18 +7,13 @@ version = "0.1.0"
 [tasks.start]
 depends-on = [ "stage-1-vmec", "stage-2-booz", "stage-3-sfincs"]
 
-[tasks.initialize-example-inputs]
-cmd = """mkdir -p stage1-equilibrium/input && (test -n "$(ls stage1-equilibrium/input)" && echo "stage1-equilibrium/input/ already populated; skipping (wipe the directory to re-seed from expected_input/)." || cp -R stage1-equilibrium/expected_input/* stage1-equilibrium/input/) && \
-mkdir -p stage3-neoclassical/input && (test -n "$(ls stage3-neoclassical/input)" && echo "stage3-neoclassical/input/ already populated; skipping (wipe the directory to re-seed from expected_input/)." || cp -R stage3-neoclassical/expected_input/* stage3-neoclassical/input/) && \
-mkdir -p stage4-turbulence/input && (test -n "$(ls stage4-turbulence/input)" && echo "stage4-turbulence/input/ already populated; skipping (wipe the directory to re-seed from expected_input/)." || cp -R stage4-turbulence/expected_input/* stage4-turbulence/input/)"""
-
 [dependencies]
 
 [feature.vmec-jax.dependencies]
 vmec-jax = ">=0.0.4,<0.0.5"
 
 [feature.vmec-jax.tasks.stage-1-vmec]
-cmd = "vmec_jax stage1-equilibrium/input/input.HSX_QHS_vacuum_ns201 --outdir stage1-equilibrium/output"
+cmd = "vmec_jax stages/stage1-equilibrium/input/input.HSX_vacuum_ns201_quickrun --outdir stages/stage1-equilibrium/output"
 
 [feature.desc.dependencies]
 desc-opt = ">=0.17.1,<0.18"
@@ -33,29 +28,29 @@ cmd = 'python -c "import booz_xform; print(booz_xform.__version__)"'
 booz-xform-jax = ">=0.1.0,<0.2"
 
 [feature.booz-xform-jax.tasks.stage-2-booz]
-cmd = "python stage2-boozer/run_boozer.py --wout stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc --output stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc"
+cmd = "python stages/stage2-boozer/run_boozer.py --wout stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc --output stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc"
 
 [feature.sfincs.dependencies]
 sfincs-mpich = ">=3.0.0,<4"
 
 [feature.sfincs.tasks.stage-3-sfincs-fortran]
-cmd = """mkdir -p stage3-neoclassical/output && \
-cp stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201 stage3-neoclassical/output/input.namelist && \
-cd stage3-neoclassical/output && \
+cmd = """mkdir -p stages/stage3-neoclassical/output && \
+cp stages/stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun stages/stage3-neoclassical/output/input.namelist && \
+cd stages/stage3-neoclassical/output && \
 sfincs"""
 
 [feature.sfincs-jax.dependencies]
 sfincs-jax = ">=1.1.0,<2"
 
 [feature.sfincs-jax.tasks.stage-3-sfincs]
-cmd = "sfincs_jax stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201 --out stage3-neoclassical/output/sfincsOutput.h5 --wout-path stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc"
+cmd = "sfincs_jax stages/stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun --out stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5 --wout-path stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc"
 
 [feature.spectrax-gk.dependencies]
 spectraxgk = ">=1.5.0,<2"
 booz-xform-jax = ">=0.1.0,<0.2"
 
 [feature.spectrax-gk.tasks.stage-4-spectrax]
-cmd = "spectrax-gk run --config ./stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml --out stage4-turbulence/output/hsx_run"
+cmd = "spectrax-gk run --config ./stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml --out stages/stage4-turbulence/output/hsx_run_quickrun"
 
 [feature.neopax.dependencies]
 scipy = ">=1.17.1,<2"

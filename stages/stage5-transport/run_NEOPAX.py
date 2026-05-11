@@ -21,9 +21,9 @@ Output_Path=os.path.join(current_path,'./examples/Solve_Er_General/')
 
 
 
-vmec_file=os.path.join(Input_Path,'wout_HSX_QHS_vacuum_ns201.nc')
-boozer_file=os.path.join(Input_Path, 'boozmn_HSX_QHS_vacuum_ns201.nc')
-neoclassical_file=os.path.join(Input_Path,'Dij_HSX_QHS_vacuum_ns201.h5')
+vmec_file=os.path.join(Input_Path,'wout_HSX_vacuum_ns201_quickrun.nc')
+boozer_file=os.path.join(Input_Path, 'boozmn_HSX_vacuum_ns201_quickrun.nc')
+neoclassical_file=os.path.join(Input_Path,'Dij_HSX_vacuum_ns201_quickrun.h5')
 profiles_file=os.path.join(Input_Path,'Impurity_SFINCS_mixed.h5')
 neoclassical_option= 1
 
@@ -169,7 +169,7 @@ Gamma_mom,Q_mom,Upar_mom,qpar_mom,Upar2_mom=NEOPAX.get_Neoclassical_Fluxes_With_
 J_boots=(-Upar_mom[:,0]+Upar_mom[:,1]+Upar_mom[:,2])*elementary_charge
 Er_final=sol.ys[0][-1,:]
 
-file=h5.File('NEOPAX_output.h5','w')
+file=h5.File('NEOPAX_output_quickrun.h5','w')
 file['rho']=field.rho_grid
 file['Er']=Er_final
 file['Jboots']=J_boots

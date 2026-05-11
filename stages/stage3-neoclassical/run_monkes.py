@@ -25,8 +25,8 @@ nl=64
 #eq='wout_QI_nfp2_initial_hires.nc'
 #
 #Setting VMEC equilibrium and boozer file (needed for correct conversion factors)
-eq=os.path.join(current_path,'../inputs/wout_HSX_QHS_vacuum_ns201.nc')
-booz=os.path.join(current_path, '../inputs/boozmn_wout_HSX_QHS_vacuum_ns201.nc')
+eq=os.path.join(current_path,'../inputs/wout_HSX_vacuum_ns201_quickrun.nc')
+booz=os.path.join(current_path, '../inputs/boozmn_HSX_vacuum_ns201_quickrun.nc')
 vmec=eq
 
 #Typical rho, nu/v and E_rtilde/(v B0) values used in DKES IPP databases 
@@ -153,7 +153,7 @@ for si in range(len(rho)):
 
 
 #Write data in hdf5 file
-file=h5.File('Dij_HSX_QHS_vacuum_ns201.h5','w')
+file=h5.File('Dij_HSX_vacuum_ns201_quickrun.h5','w')
 file['rho']=rho
 file['nu_v']=nu_v
 file['Er']=Er

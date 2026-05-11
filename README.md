@@ -44,7 +44,7 @@ Stages 3 and 4 run in parallel. Each stage should eventually be independently sw
 
 **Phase 1** work goes into the stage spec docs (`docs/stage{N}-{name}/spec.md`) -- the "TO BE COMPLETED" sections.
 
-**Phase 2** adds containers and tests. Dependencies are managed through Pixi (e.g., `mvp/pixi.toml` + `mvp/pixi.lock`), and a single templated Dockerfile (e.g., `mvp/Dockerfile`) builds all stages via build arguments. See [guide](docs/guide.md#container-architecture) for details.
+**Phase 2** adds containers and tests. Dependencies are managed through Pixi (`pixi.toml` + `pixi.lock`), and a single templated `Dockerfile` builds all stages via build arguments. See [guide](docs/guide.md#container-architecture) for details.
 
 ## Workflow
 

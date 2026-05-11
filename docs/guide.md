@@ -93,7 +93,7 @@ Work through these steps in order. Each step should result in updates to the sta
 
 ### Step 1: Install and Run the Primary Code
 
-- Install the primary code using the Pixi environment for the stage (see `mvp/pixi.toml` and `docs/mvp-pipeline.md` for install/run commands)
+- Install the primary code using the Pixi environment for the stage (see `pixi.toml` and `docs/mvp-pipeline.md` for install/run commands)
 - If the code is not yet in a Pixi environment, ensure it can be installed via conda-forge or PyPI, add it to the relevant `pixi.toml`, and regenerate the lock file
 - Get it running locally on a reference case
 - Document any installation issues, version requirements, or platform-specific notes
@@ -161,15 +161,15 @@ After Phase 1 is complete for a stage, move to containerization and testing.
 
 StellaForge is a **recipe repo**: it contains everything needed to build and run the containerized pipeline, but does not contain the upstream solver code itself.
 
-**Pixi-based environments.** Dependencies are managed through `pixi.toml` files, e.g., `mvp/pixi.toml` and locked in `pixi.lock` files, e.g., `mvp/pixi.lock`. Stages with Pixi environments defined have named environments (e.g., `stage-1-vmec`, `stage-1-vmec-gpu`) that fully specify the dependency stack.
+**Pixi-based environments.** Dependencies are managed through the root `pixi.toml`, locked in `pixi.lock`. Stages with Pixi environments defined have named environments (e.g., `stage-1-vmec`, `stage-1-vmec-gpu`) that fully specify the dependency stack.
 
-**Templated container images.** There is one shared `Dockerfile` and `apptainer.def` Apptainer definition file, e.g. `mvp/Dockerfile` that uses build arguments to select the target environment at build time:
+**Templated container images.** A single shared `Dockerfile` and `apptainer.def` at the repo root use build arguments to select the target environment at build time:
 - `ENVIRONMENT` -- the Pixi environment name (e.g., `stage-1-vmec`, `stage-2-booz-jax-gpu`). Must be passed explicitly when building locally:
-   - `docker build --build-arg ENVIRONMENT=stage-1-vmec mvp/`
-   - `cd mvp && apptainer build --build-arg ENVIRONMENT="stage-1-vmec" stage-1-vmec.sif apptainer.def`
+   - `docker build --build-arg ENVIRONMENT=stage-1-vmec .`
+   - `apptainer build --build-arg ENVIRONMENT="stage-1-vmec" stage-1-vmec.sif apptainer.def`
 - `CUDA_VERSION` -- set for GPU builds (e.g., `12`), left empty for CPU builds
 
-The Dockerfile uses a multi-stage build on a `ghcr.io/prefix-dev/pixi:noble` base image. See `mvp/Dockerfile` for implementation details.
+The Dockerfile uses a multi-stage build on a `ghcr.io/prefix-dev/pixi:noble` base image. See `Dockerfile` for implementation details.
 
 **Container images** are published to GHCR at `ghcr.io/rkhashmani/stellaforge`. For MVP, the tags follow the pattern `stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). Apptainer container images are prefixed with `apptainer-`. CI builds all stage variants from the container image definition files using a GitHub Actions matrix. See `.github/workflows/containers.yml` and `.github/actions/build-docker/action.yml` for the CI setup.
 
