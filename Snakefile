@@ -38,9 +38,9 @@ DOCKER_PREFIX = (
 rule all:
     input:
         f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
-        "stages/stage3-neoclassical/output/sfincsOutput.h5",
-        "stages/stage4-turbulence/output/hsx_run.summary.json",
-        "stages/stage4-turbulence/output/hsx_run.diagnostics.csv",
+        "stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5",
+        "stages/stage4-turbulence/output/hsx_run_quickrun.summary.json",
+        "stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv",
 
 rule stage1_vmec:
     input:  f"stages/stage1-equilibrium/input/input.{RUN_NAME}"
@@ -61,13 +61,13 @@ rule stage3_sfincs:
         namelist = f"stages/stage3-neoclassical/input/input.{RUN_NAME}",
         wout     = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
     output:
-        "stages/stage3-neoclassical/output/sfincsOutput.h5",
+        "stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5",
     run:
         if STAGE3_BACKEND == "sfincs_jax":
             shell(
                 f"{DOCKER_PREFIX} {STAGE3_JAX_IMG} "
                 "sfincs_jax {input.namelist} "
-                "--out stages/stage3-neoclassical/output/sfincsOutput.h5 "
+                "--out stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5 "
                 "--wout-path {input.wout}"
             )
         else:  # sfincs_fortran
@@ -82,17 +82,17 @@ rule stage3_sfincs:
 # spectrax-gk regenerates from the current wout rather than reusing stale cache.
 rule stage4_spectrax:
     input:
-        toml = "stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml",
+        toml = "stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml",
         wout = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
     output:
-        summary     = "stages/stage4-turbulence/output/hsx_run.summary.json",
-        diagnostics = "stages/stage4-turbulence/output/hsx_run.diagnostics.csv",
+        summary     = "stages/stage4-turbulence/output/hsx_run_quickrun.summary.json",
+        diagnostics = "stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv",
         eik_cache   = f"stages/stage4-turbulence/output/wout_{RUN_NAME}.eik.nc",
     shell:
         "rm -f {output.eik_cache} && "
         f"{DOCKER_PREFIX} {STAGE4_IMG} "
         "spectrax-gk run --config {input.toml} "
-        "--out stages/stage4-turbulence/output/hsx_run"
+        "--out stages/stage4-turbulence/output/hsx_run_quickrun"
 
 rule clean:
     shell:

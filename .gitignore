@@ -214,9 +214,6 @@ __marimo__/
 # StellaForge: Snakemake workflow metadata (dag cache, run history, shadow dirs)
 .snakemake/
 
-# StellaForge: runtime stage outputs (distinct from tracked expected_output/ reference fixtures)
+# StellaForge: runtime stage outputs (Snakemake regenerates these in place;
+# tracking them would make every pipeline run a noisy git diff)
 stages/stage*/output/
-
-# StellaForge: runtime stage inputs seeded from expected_input/
-# (populate via 'pixi run initialize-example-inputs' or manually)
-stages/stage*/input/
