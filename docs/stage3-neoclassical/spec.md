@@ -279,13 +279,10 @@ pixi run stage-3-sfincs
 ```
 
 > [!NOTE]
-> The pixi task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`. The namelist's `equilibriumFile` field is retained as a fallback for the `sfincs_fortran` backend and for direct `sfincs_jax` invocations that omit `--wout-path`.
+> The pixi task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec` first. The namelist's `equilibriumFile` field is retained as a fallback for the `sfincs_fortran` backend and for direct `sfincs_jax` invocations that omit `--wout-path`.
 
-> [!NOTE]
-> Populate `stage3-neoclassical/input/` from the tracked `expected_input/` via `pixi run initialize-example-inputs` (optional) or manually before running.
-
-**Input:** `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` + `stages/stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201`
-**Output:** `stages/stage3-neoclassical/output/sfincsOutput.h5`
+**Input:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` + `stages/stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun`
+**Output:** `stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5`
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
@@ -298,13 +295,13 @@ pixi run stage-3-sfincs-fortran
 Alternative implementation to `sfincs_jax`. Consumes the same input namelist and writes to the same `sfincsOutput.h5` path; the task stages the namelist as `input.namelist` in the output directory before invocation because the Fortran binary reads that filename from its working directory.
 
 **Input:** same as `sfincs_jax` above.
-**Output:** `stages/stage3-neoclassical/output/sfincsOutput.h5` (overwrites `sfincs_jax`'s output if both are run against the same directory).
+**Output:** `stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5` (overwrites `sfincs_jax`'s output if both are run against the same directory).
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
 **`monkes`:** More involved than a single command. See `stages/stage3-neoclassical/run_monkes.py` for a reference script that generates a D_ij database across radial positions, electric fields, and collisionality.
 
-**Input:** `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` + `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`
+**Input:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` + `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`
 **Output:** `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5`
 
 > [!TODO]

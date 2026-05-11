@@ -285,8 +285,8 @@ Reference: `stellarator_workflow.tex`, Sections 4.8--4.9.
 
 **`NEOPAX`:** Run inside a script. See `stages/stage5-transport/run_NEOPAX.py` as a reference.
 
-**Input:** `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` + `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc` + `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` (if using `monkes`)
-**Output:** `stages/stage5-transport/output/NEOPAX_output.h5`
+**Input:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` + `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc` + `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` (if using `monkes`)
+**Output:** `stages/stage5-transport/output/NEOPAX_output_quickrun.h5`
 
 > [!NOTE]
 > `NEOPAX`, being the final stage, has additional complexities. If `monkes` is used, `NEOPAX` consumes a pre-built D_ij database. If `sfincs_jax` is used, `NEOPAX` runs a loop to optimize over different fluxes (more computationally expensive).

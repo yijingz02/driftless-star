@@ -221,11 +221,8 @@ Reference: `stellarator_workflow.tex`, Sections 4.1-4.2.
 pixi run stage-1-vmec
 ```
 
-> [!NOTE]
-> Populate `stage1-equilibrium/input/` from the tracked `expected_input/` via `pixi run initialize-example-inputs` (optional) or manually before running.
-
-**Input:** `stages/stage1-equilibrium/input/input.HSX_QHS_vacuum_ns201`
-**Output:** `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`
+**Input:** `stages/stage1-equilibrium/input/input.HSX_vacuum_ns201_quickrun`
+**Output:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`
 
 See `docs/mvp-pipeline.md` for full I/O details.
 

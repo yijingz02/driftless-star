@@ -34,18 +34,18 @@
 
 ## Stage Test Data
 
-Input configs, committed reference outputs, and runtime outputs under `stages/`:
+Tracked reduced-accuracy quickrun inputs and the run scripts that consume them under `stages/`:
 
 ```
 stages/
-├── stage1-equilibrium/     expected_input/ + expected_output/ + (runtime)input/ + (runtime)output/
-├── stage2-boozer/          run_boozer.py + expected_output/ + (runtime)output/
-├── stage3-neoclassical/    expected_input/ + expected_output/ + run_monkes.py + (runtime)input/ + (runtime)output/
-├── stage4-turbulence/      expected_input/ + expected_output/ + (runtime)input/ + (runtime)output/
-└── stage5-transport/       run_NEOPAX.py + expected_output/ + (runtime)output/
+├── stage1-equilibrium/     input/  (input.HSX_vacuum_ns201_quickrun)
+├── stage2-boozer/          run_boozer.py
+├── stage3-neoclassical/    input/  (input.HSX_vacuum_ns201_quickrun) + run_monkes.py
+├── stage4-turbulence/      input/  (runtime_hsx_nonlinear_vmec_geometry_quickrun.toml)
+└── stage5-transport/       run_NEOPAX.py
 ```
 
-`expected_input/` and `expected_output/` hold the tracked reference configs and reference outputs. `input/` and `output/` are gitignored runtime locations -- the pipeline reads from `input/` and writes to `output/`. Use `pixi run initialize-example-inputs` to seed `input/` from `expected_input/` (optional; users may populate or modify `input/` directly). The task skips any stage whose `input/` dir is already populated. To re-seed a stage (e.g. after `expected_input/` changes upstream), wipe that stage's `input/` dir and re-run the task. Cross-stage configs reference upstream `output/`, so run stages in forward-chain order (`stage-1-vmec` first).
+Each stage's `input/` directory ships with a `_quickrun` smoke-test variant so a fresh clone is immediately runnable. Each stage's `output/` directory is gitignored: Snakemake regenerates it in place via `pixi run -e pipeline snakemake --cores 4`, and cross-stage configs read upstream outputs from there. Run stages in forward-chain order (`stage-1-vmec` first) when invoking individual pixi tasks; Snakemake handles the dependency order automatically.
 
 ---
 
@@ -57,12 +57,12 @@ stages/
 
 | Direction                     | Format                                    | Location                                                                        |
 | ----------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------- |
-| **In**                        | Fortran-style Text                        | `stages/stage1-equilibrium/input/input.HSX_QHS_vacuum_ns201`              |
-| **Out**                       | NetCDF `wout_*.nc` (similar to hdf5 file) | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`  |
+| **In**                        | Fortran-style Text                        | `stages/stage1-equilibrium/input/input.HSX_vacuum_ns201_quickrun`              |
+| **Out**                       | NetCDF `wout_*.nc` (similar to hdf5 file) | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`  |
 | **Additional Out** (optional) | Text (terminal output)                    | `stages/stage1-equilibrium/output/optional_terminal_output.vmec` |
 
 > [!NOTE]
-> `HSX_QHS_vacuum_ns201` is an example name. This can be changed. As can the entirety of the name `optional_terminal_output.vmec`.
+> `HSX_vacuum_ns201_quickrun` is an example name. This can be changed. As can the entirety of the name `optional_terminal_output.vmec`.
 
 ### How to Install
 
@@ -78,9 +78,6 @@ pixi install --environment stage-1-vmec
 pixi run stage-1-vmec
 ```
 
-> [!NOTE]
-> Populate `stage1-equilibrium/input/` from the tracked `expected_input/` via `pixi run initialize-example-inputs` (optional) or manually before running.
-
 ---
 
 ## Stage 2 -- Boozer Transform
@@ -89,11 +86,11 @@ pixi run stage-1-vmec
 
 | Direction | Format               | Location                                                                          |
 | --------- | -------------------- | --------------------------------------------------------------------------------- |
-| **In**    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`    |
-| **Out**   | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc` |
+| **In**    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`    |
+| **Out**   | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc` |
 
 > [!NOTE]
-> Stage 2's JAX driver takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
+> Stage 2's JAX driver takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec` first.
 
 ### How to Install
 
@@ -112,17 +109,17 @@ which is morally similar to
 ```python
 import booz_xform_jax as bx
 b=bx.Booz_xform()
-b.read_wout("stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc")
+b.read_wout("stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc")
 b.run()
-b.write_boozmn("stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc")
+b.write_boozmn("stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc")
 ```
 
 or directly from the command line:
 
 ```bash
 python stages/stage2-boozer/run_boozer.py \
-  --wout stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc \
-  --output stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc
+  --wout stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc \
+  --output stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc
 ```
 
 ---
@@ -133,9 +130,9 @@ python stages/stage2-boozer/run_boozer.py \
 
 | Direction | Format                       | Location                                                                       |
 | --------- | ---------------------------- | ------------------------------------------------------------------------------ |
-| **In**    | NetCDF `wout_*.nc`           | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` |
-| **In**    | Fortran-style Text `input.*` | `stages/stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201`          |
-| **Out**   | HDF5 `sfincsOutput.h5`       | `stages/stage3-neoclassical/output/sfincsOutput.h5`           |
+| **In**    | NetCDF `wout_*.nc`           | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` |
+| **In**    | Fortran-style Text `input.*` | `stages/stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun`          |
+| **Out**   | HDF5 `sfincsOutput.h5`       | `stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5`           |
 
 #### How to Install
 
@@ -150,19 +147,16 @@ pixi run stage-3-sfincs
 ```
 
 > [!NOTE]
-> The pixi `stage-3-sfincs` task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`, overriding the namelist `equilibriumFile` field. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`. The `sfincs_fortran` backend has no CLI override and still reads `equilibriumFile` from the namelist.
-
-> [!NOTE]
-> Populate `stage3-neoclassical/input/` from the tracked `expected_input/` via `pixi run initialize-example-inputs` (optional) or manually before running.
+> The pixi `stage-3-sfincs` task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`, overriding the namelist `equilibriumFile` field. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec` first. The `sfincs_fortran` backend has no CLI override and still reads `equilibriumFile` from the namelist.
 
 
 **Code:** SFINCS (Fortran)
 
 | Direction | Format                       | Location                                                                       |
 | --------- | ---------------------------- | ------------------------------------------------------------------------------ |
-| **In**    | NetCDF `wout_*.nc`           | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` |
-| **In**    | Fortran-style Text `input.*` | `stages/stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201`          |
-| **Out**   | HDF5 `sfincsOutput.h5`       | `stages/stage3-neoclassical/output/sfincsOutput.h5`           |
+| **In**    | NetCDF `wout_*.nc`           | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` |
+| **In**    | Fortran-style Text `input.*` | `stages/stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun`          |
+| **Out**   | HDF5 `sfincsOutput.h5`       | `stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5`           |
 
 #### How to Install
 
@@ -180,15 +174,15 @@ pixi run stage-3-sfincs-fortran
 > `SFINCS` (Fortran) is an alternative to `sfincs_jax`. It reads the same namelist and writes to the same `sfincsOutput.h5` path, so running both against one output directory will overwrite the prior result.
 
 > [!NOTE]
-> The task copies `stage3-neoclassical/input/input.HSX_QHS_vacuum_ns201` to `stage3-neoclassical/output/input.namelist` before invoking the binary, because SFINCS (Fortran) reads `input.namelist` from its working directory.
+> The task copies `stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun` to `stage3-neoclassical/output/input.namelist` before invoking the binary, because SFINCS (Fortran) reads `input.namelist` from its working directory.
 
 
 **code:** Monkes
 
 | Direction | Format               | Location                                                                                         |
 | --------- | -------------------- | ------------------------------------------------------------------------------------------------ |
-| **In**    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`                   |
-| **In**    | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                |
+| **In**    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`                   |
+| **In**    | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`                |
 | **Out**   | HDF5 `D_ij.h5`       | `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` |
 
 > [!NOTE]
@@ -215,13 +209,13 @@ We basically call it inside a python loop to use Monkes to generate a database a
 
 | Direction | Format             | Location                                                                           |
 | --------- | ------------------ | ---------------------------------------------------------------------------------- |
-| **In**    | NetCDF `wout_*.nc` | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`     |
-| **In**    | TOML config        | `stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml` |
-| **Out**   | Summary `JSON`     | `stages/stage4-turbulence/output/hsx_run.summary.json`           |
-| **Out**   | `csv`              | `stages/stage4-turbulence/output/hsx_run.diagnostics.csv`        |
+| **In**    | NetCDF `wout_*.nc` | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`     |
+| **In**    | TOML config        | `stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml` |
+| **Out**   | Summary `JSON`     | `stages/stage4-turbulence/output/hsx_run_quickrun.summary.json`           |
+| **Out**   | `csv`              | `stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv`        |
 
 > [!NOTE]
-> The TOML's `vmec_file` points into `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
+> The TOML's `vmec_file` points into `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec` first.
 
 ### How to Install
 
@@ -234,9 +228,6 @@ pixi install --environment stage-4-spectrax
 ```
 pixi run stage-4-spectrax
 ```
-
-> [!NOTE]
-> Populate `stage4-turbulence/input/` from the tracked `expected_input/` via `pixi run initialize-example-inputs` (optional) or manually before running.
 
 which executes something morally equivalent to
 
@@ -252,10 +243,10 @@ spectrax-gk run --config runtime_hsx_nonlinear_vmec_geometry.toml --out output/h
 
 | Direction                                 | Format               | Location                                                                                         |
 | ----------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
-| **In**                                    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc`                   |
-| **In**                                    | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                |
+| **In**                                    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`                   |
+| **In**                                    | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`                |
 | **In** (Only needed if `monkes` is used.) | HDF5 `D_ij.h5`       | `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` |
-| **Out**                                   | HDF5 `profiles_*.h5` | `stages/stage5-transport/output/NEOPAX_output.h5`                                   |
+| **Out**                                   | HDF5 `profiles_*.h5` | `stages/stage5-transport/output/NEOPAX_output_quickrun.h5`                                   |
 > [!NOTE]
 > The inputs come from Stage 1, Stage 2, and Stage 3.
 
@@ -292,10 +283,10 @@ Automates the MVP forward pass end-to-end: `Stage 1 -> {Stage 2, Stage 3, Stage 
 | **In**    | YAML config         | `config.yaml` (Currently: `run_name`, `stage3_backend`, `device`)                                   |
 | **In**    | Workflow definition | `Snakefile`                                                                                         |
 | **In**    | Per-stage inputs    | `stages/stage{1,3,4}-*/input/`                                                                         |
-| **Out**   | Stage 2 NetCDF      | `stages/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`                                           |
-| **Out**   | Stage 3 HDF5        | `stages/stage3-neoclassical/output/sfincsOutput.h5`                                                    |
-| **Out**   | Stage 4 JSON + CSV  | `stages/stage4-turbulence/output/hsx_run.{summary.json,diagnostics.csv}`                               |
-| **Out**   | Stage 4 cache       | `stages/stage4-turbulence/output/wout_HSX_QHS_vacuum_ns201.eik.nc` (geometry, regenerated every rerun) |
+| **Out**   | Stage 2 NetCDF      | `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`                                           |
+| **Out**   | Stage 3 HDF5        | `stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5`                                                    |
+| **Out**   | Stage 4 JSON + CSV  | `stages/stage4-turbulence/output/hsx_run_quickrun.{summary.json,diagnostics.csv}`                      |
+| **Out**   | Stage 4 cache       | `stages/stage4-turbulence/output/wout_HSX_vacuum_ns201_quickrun.eik.nc` (geometry, regenerated every rerun) |
 
 > [!NOTE]
 > `rule all` lists only the terminal artifacts above. Upstream intermediates (Stage 1's wout) are produced transitively because downstream rules declare them as `input:`.
@@ -327,9 +318,6 @@ pixi run -e pipeline snakemake -n                         # dry-run: shows the p
 pixi run -e pipeline snakemake --cores 4                  # full pipeline, stages 2/3/4 in parallel
 pixi run -e pipeline snakemake clean --cores 1            # wipe every stage's output/ dir
 ```
-
-> [!NOTE]
-> Optional first step on a fresh clone: `pixi run initialize-example-inputs` seeds `stage{1,3,4}/input/` from the tracked `expected_input/` directories. Skip it if you populate `input/` yourself or if the task has already been run (it is idempotent and skip-if-populated, so running it twice is also safe).
 
 Per-invocation overrides via `--config`:
 

@@ -34,7 +34,7 @@ Forward-pass chain: `vmec_jax` -> `booz_xform_jax` -> (`sfincs_jax` / `monkes`) 
 ### Naming Conventions
 
 - Stage directories: `stage{N}-{name}` (e.g., `stage1-equilibrium`)
-- Per-stage data subdirectories (under `stages/stage{N}-{name}/`): `expected_input/` and `expected_output/` hold tracked reference data; `input/` and `output/` are runtime working directories (gitignored). Seed `input/` via `pixi run initialize-example-inputs`.
+- Per-stage data subdirectories (under `stages/stage{N}-{name}/`): `input/` (when applicable) and `output/` are tracked. They contain reduced-accuracy `_quickrun` smoke-test artifacts so a fresh clone is immediately runnable. Snakemake reruns overwrite `output/` in place; `git diff` makes any drift auditable.
 - Container images: `ghcr.io/rkhashmani/stellaforge:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`) (on GHCR)
 - W&B projects: `stellaforge-stage{N}-{name}`
 - Output directories: `{run_dir}/stage{N}_{name}/`
