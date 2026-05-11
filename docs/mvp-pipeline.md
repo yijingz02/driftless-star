@@ -6,30 +6,30 @@
    v                          v                         v
 ┌────────┐  NetCDF  ┌──────────────┐  NetCDF  ┌──────────────────────┐
 │Stage 1 │ -------> │   Stage 2    │ -------> │      Stage 3         │
-│vmec_jax│ wout_*.nc│booz_xform_jax│boozmn_*.nc│ SFINCS       monkes │
-└────────┘          └──────────────┘          └───┬──────────────┬───┘
-                          |                       |              |
-                          |                       v              v
-                          |              sfincsOutput.h5      D_ij.h5
-                          |                  (HDF5)           (HDF5)
-                          |                       |              |
-                          |    ┌────────────┐     |              |
-                          +--->│  Stage 4   │     |              |
-                     wout_*.nc │ SPECTRAX-GK│     |              |
-                               └─────┬──────┘     |              |
-                                     |             |              |
-                                flux (CSV)         |              |
-                                     |             |              |
-                                     v             v              v
-                     ┌───────────────────────────────────────────────┐
-                     │                  Stage 5                     │
-                     │            Transport / Profiles              │
-                     │  NEOPAX (wout + boozmn + D_ij + turb flux)   │
-                     └──────────────────┬──────────────────────────┘
-                                        |
-                                        v
-                                   profiles.h5
-                              n(r), T(r), E_r(r), P_fus, Q
+│vmec_jax│ wout_*.nc│booz_xform_jax│boozmn_*.nc│        SFINCS        │
+└────────┘          └──────────────┘          └──────────┬───────────┘
+                          |                              |
+                          |                              v
+                          |                      sfincsOutput.h5
+                          |                          (HDF5)
+                          |                              |
+                          |    ┌────────────┐            |
+                          +--->│  Stage 4   │            |
+                     wout_*.nc │ SPECTRAX-GK│            |
+                               └─────┬──────┘            |
+                                     |                   |
+                                flux (CSV)               |
+                                     |                   |
+                                     v                   v
+                     ┌────────────────────────────────────────┐
+                     │                 Stage 5                │
+                     │          Transport / Profiles          │
+                     │   NEOPAX (wout + boozmn + turb flux)   │
+                     └─────────────────┬──────────────────────┘
+                                       |
+                                       v
+                                  profiles.h5
+                             n(r), T(r), E_r(r), P_fus, Q
 ```
 
 ## Stage Test Data
@@ -40,7 +40,7 @@ Tracked reduced-accuracy quickrun inputs and the run scripts that consume them u
 stages/
 ├── stage1-equilibrium/     input/  (input.HSX_vacuum_ns201_quickrun)
 ├── stage2-boozer/          run_boozer.py
-├── stage3-neoclassical/    input/  (input.HSX_vacuum_ns201_quickrun) + run_monkes.py
+├── stage3-neoclassical/    input/  (input.HSX_vacuum_ns201_quickrun)
 ├── stage4-turbulence/      input/  (runtime_hsx_nonlinear_vmec_geometry_quickrun.toml)
 └── stage5-transport/       run_NEOPAX.py
 ```
@@ -124,7 +124,7 @@ python stages/stage2-boozer/run_boozer.py \
 
 ---
 
-## Stage 3 -- Neoclassical (two parallel sub-stages)
+## Stage 3 -- Neoclassical
 
 **Code:** sfincs_jax
 
@@ -177,30 +177,6 @@ pixi run stage-3-sfincs-fortran
 > The task copies `stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun` to `stage3-neoclassical/output/input.namelist` before invoking the binary, because SFINCS (Fortran) reads `input.namelist` from its working directory.
 
 
-**code:** Monkes
-
-| Direction | Format               | Location                                                                                         |
-| --------- | -------------------- | ------------------------------------------------------------------------------------------------ |
-| **In**    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`                   |
-| **In**    | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`                |
-| **Out**   | HDF5 `D_ij.h5`       | `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` |
-
-> [!NOTE]
-> The inputs come from both Stage 1 and Stage 2.
-
-#### How to Install
-```bash
-git clone https://github.com/eduardolneto/monkes.git
-cd monkes
-pip install .
-```
-
-#### How to Run
-
-Monkes is a little more involved. See `stages/stage3-neoclassical/run_monkes.py`
-
-We basically call it inside a python loop to use Monkes to generate a database across different radial positions, electric fields, and collisionality, but it uses the same 2 input files for the entire loop.
-
 ---
 
 ## Stage 4 -- Turbulence
@@ -241,14 +217,13 @@ spectrax-gk run --config runtime_hsx_nonlinear_vmec_geometry.toml --out output/h
 
 **Code:** NEOPAX
 
-| Direction                                 | Format               | Location                                                                                         |
-| ----------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
-| **In**                                    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`                   |
-| **In**                                    | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`                |
-| **In** (Only needed if `monkes` is used.) | HDF5 `D_ij.h5`       | `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` |
-| **Out**                                   | HDF5 `profiles_*.h5` | `stages/stage5-transport/output/NEOPAX_output_quickrun.h5`                                   |
+| Direction | Format               | Location                                                                       |
+| --------- | -------------------- | ------------------------------------------------------------------------------ |
+| **In**    | NetCDF `wout_*.nc`   | `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`           |
+| **In**    | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`              |
+| **Out**   | HDF5 `profiles_*.h5` | `stages/stage5-transport/output/NEOPAX_output_quickrun.h5`                     |
 > [!NOTE]
-> The inputs come from Stage 1, Stage 2, and Stage 3.
+> The inputs come from Stage 1 and Stage 2.
 
 ### How to Install
 
@@ -258,14 +233,11 @@ pixi install --environment stage-5-neopax
 
 ### How to Run
 
-This is run inside a script. See `stages/stage5-transport/run_NEOPAX.py` as a reference.
+> [!TODO]
+> A reference run script for `NEOPAX` will be added once the Stage 3 → Stage 5 handoff via `sfincs_jax` is designed.
 
 > [!NOTE]
-> `NEOPAX`, being the final stage, has additional complexities and variabilities in the workflow.
->
-> For example, if `monkes` is used, then the script using `NEOPAX` won't constantly loop since `monkes` provides a database and does the loop before reaching Stage 5.
->
-> If `sfincs_jax` is used, then ideally, the script using NEOPAX runs a loop to optimize over different fluxes. While ideal, this is most computationally expensive.
+> `NEOPAX`, being the final stage, has additional complexities. Ideally the script using `NEOPAX` runs a loop over `sfincs_jax` fluxes to optimize for ambipolarity, which is the most computationally expensive step in the pipeline.
 
 ---
 

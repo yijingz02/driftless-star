@@ -8,7 +8,7 @@ StellaForge implements the stellarator design workflow described in the companio
 
 **Goal:** A working forward pass -- a single traversal of the pipeline from boundary Fourier coefficients and profile guesses through to transport-consistent profiles and fusion-power metrics (P_fus, Q). This is distinct from closing the optimization loop, which would feed updated pressure and current back to the equilibrium stage.
 
-**JAX-first strategy:** The pipeline prioritizes JAX-native implementations for differentiability and tight integration: `vmec_jax` -> `booz_xform_jax` -> (`sfincs_jax` / `monkes`) -> `SPECTRAX-GK` -> `NEOPAX`. Other codes (`VMEC++`, `BOOZ_XFORM`, `NEO_JAX`, `NEO`, `SFINCS`, `GX`, `GENE`, `Trinity3D`) are swappable alternatives.
+**JAX-first strategy:** The pipeline prioritizes JAX-native implementations for differentiability and tight integration: `vmec_jax` -> `booz_xform_jax` -> `sfincs_jax` -> `SPECTRAX-GK` -> `NEOPAX`. Other codes (`VMEC++`, `BOOZ_XFORM`, `NEO_JAX`, `NEO`, `SFINCS`, `GX`, `GENE`, `Trinity3D`) are swappable alternatives.
 
 ## Pipeline Architecture
 
@@ -21,9 +21,9 @@ StellaForge implements the stellarator design workflow described in the companio
 |-------|---------|-------------|--------------|-----------------|------------------|
 | 1. Equilibrium | Ideal-MHD force balance | `vmec_jax`, `DESC` | `VMEC++` | INDATA/JSON boundary coefficients, pressure/iota/current coefficients, PHIEDGE | `wout_*.nc` (NetCDF) |
 | 2. Boozer Transform | Coordinate transform to Boozer angles | `booz_xform_jax` | `BOOZ_XFORM` | `wout_*.nc` | `boozmn_*.nc` (NetCDF) |
-| 3. Neoclassical | Effective ripple, drift-kinetic transport, monoenergetic coefficients | `NEO_JAX`, `sfincs_jax`, `monkes` | `NEO`, `SFINCS` | `NEO`/`monkes`: `boozmn_*.nc`; `SFINCS`: `wout_*.nc` + input file | `neo_out.*`, `sfincsOutput.h5`, D_ij HDF5 database |
+| 3. Neoclassical | Effective ripple, drift-kinetic transport | `NEO_JAX`, `sfincs_jax` | `NEO`, `SFINCS` | `NEO_JAX`: `boozmn_*.nc`; `SFINCS`: `wout_*.nc` + input file | `neo_out.*`, `sfincsOutput.h5` |
 | 4. Turbulence | Delta-f gyrokinetic equation | `SPECTRAX-GK` | `GX`, `GENE` | Geometry + species profiles/gradients | gamma, omega, heat/particle flux (NetCDF/CSV) |
-| 5. Transport | 1D conservation laws for n_s, p_s | `NEOPAX` | `Trinity3D` | D_ij database + geometry + fluxes | n(r), T(r), E_r(r), P_fus, Q (HDF5/NetCDF) |
+| 5. Transport | 1D conservation laws for n_s, p_s | `NEOPAX` | `Trinity3D` | geometry + fluxes | n(r), T(r), E_r(r), P_fus, Q (HDF5/NetCDF) |
 
 ### Pipeline DAG
 
@@ -34,7 +34,7 @@ StellaForge implements the stellarator design workflow described in the companio
 
 Currently, most inter-stage communication is **file-based** using standard physics file formats:
 - **NetCDF** (`.nc`): equilibrium (`wout_*.nc`), Boozer (`boozmn_*.nc`), turbulence outputs
-- **HDF5** (`.h5`): neoclassical outputs (`sfincsOutput.h5`), `monkes` D_ij databases, `NEOPAX` profiles
+- **HDF5** (`.h5`): neoclassical outputs (`sfincsOutput.h5`), `NEOPAX` profiles
 
 Snakemake rules define which files connect which stages. Each stage's `spec.md` is the authoritative source for required/optional fields in its output files. Where alternative implementations use different file formats or field names, a wrapper or adapter layer will be needed to translate between them.
 
@@ -44,8 +44,7 @@ Snakemake rules define which files connect which stages. Each stage's `spec.md` 
 
 1. **Screening-only outputs vs. transport state variables.** `NEO_JAX`'s epsilon_eff is central to ranking candidate geometries but is NOT advanced by a transport solver. It should not be wired as a transport input.
 2. **Dual-role outputs.** Heat/particle flux from `SPECTRAX-GK` and neoclassical flux from `SFINCS` are simultaneously optimization objectives (to minimize) AND direct numerical inputs for transport profile evolution.
-3. **`monkes` -> `NEOPAX` handoff.** `NEOPAX`'s database reader consumes a reduced subset of the `monkes` D_ij HDF5 output (`D11`, `D13`, `D33`, `Er`, `Er_tilde`, `drds`, `rho`, `nu_v`). Agreement on exact field names and shapes is required.
-4. **Turbulence coupling.** `NEOPAX` has turbulence-coupling utilities, but the public examples center on the neoclassical reduced model from `monkes`. The `SPECTRAX-GK` -> `NEOPAX` path (Stage 4 -> Stage 5) is not yet the default.
+3. **Turbulence coupling.** `NEOPAX` has turbulence-coupling utilities, but the `SPECTRAX-GK` -> `NEOPAX` path (Stage 4 -> Stage 5) is not yet the default.
 
 ### Swappability Patterns
 
@@ -193,7 +192,6 @@ The Dockerfile uses a multi-stage build on a `ghcr.io/prefix-dev/pixi:noble` bas
 - Stage 2: (|B|_VMEC - |B|_Boozer) / |B|_VMEC < eps; Boozer transform preserves iota
 - Stage 3 (`NEO`): epsilon_eff is non-negative, bounded
 - Stage 3 (`SFINCS`): transport matrix has expected symmetry properties; full flux mode produces physically reasonable fluxes
-- Stage 3 (`monkes`): D_13 = D_31 (Onsager symmetry), D_11 > 0
 - Stage 4: growth rates are real-valued, fluxes are non-negative in steady state
 - Stage 5: profiles satisfy conservation (total particle/energy content)
 
@@ -203,8 +201,8 @@ Place tests in `tests/stage{N}-{name}/`.
 
 **Integration tests.** Verify that the stage's output is valid input for its downstream consumers. For example:
 - Stage 1: verify `wout_*.nc` can be read by `booz_xform_jax` (Stage 2), `sfincs_jax` (Stage 3), and `SPECTRAX-GK` (Stage 4)
-- Stage 2: verify `boozmn_*.nc` can be read by `NEO_JAX` and `monkes` (Stage 3)
-- Stage 3: verify `sfincsOutput.h5` (if using `sfincs_jax`) or `D_ij.h5` (if using `monkes`) can be read by `NEOPAX` (Stage 5)
+- Stage 2: verify `boozmn_*.nc` can be read by `NEO_JAX` (Stage 3)
+- Stage 3: verify `sfincsOutput.h5` (from `sfincs_jax`) can be read by `NEOPAX` (Stage 5)
 - Stage 4: verify flux CSV output can be consumed by `NEOPAX` (Stage 5)
 - Stage 5: verify end-to-end output (`profiles.h5`: n(r), T(r), E_r(r), P_fus, Q) is produced correctly
 - Stage 5 → Stage 1: verify updated profiles from Stage 5 can be fed back as input to Stage 1 to close the optimization loop
@@ -230,7 +228,7 @@ When a stage completes Phase 2 (containerized, tested, and producing valid outpu
 > Define the process for adding a stage to the Snakemake DAG.
 
 **Design points to keep in mind:**
-- Stages 3 and 4 run in parallel after Stage 2; Stage 3's `NEO_JAX` also runs parallel with the main process (`sfincs_jax` or `monkes`)
+- Stages 3 and 4 run in parallel after Stage 2; Stage 3's `NEO_JAX` also runs in parallel with `sfincs_jax`
 - `NEO_JAX`'s epsilon_eff is a screening metric only -- it should not be wired as a dependency for Stage 5
 
 ### Config-Driven Selection

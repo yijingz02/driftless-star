@@ -2,17 +2,14 @@
 
 ## Overview
 
-Stage 3 computes neoclassical transport properties from the Boozer-coordinate equilibrium. It has three codes:
+Stage 3 computes neoclassical transport properties from the Boozer-coordinate equilibrium. It has two codes:
 
-1. **`NEO` / `NEO_JAX`** -- Computes effective ripple (epsilon_eff), a screening/optimization diagnostic. **NOT a transport state variable** -- does not feed into profile evolution. Runs independently alongside whichever transport code is selected.
+1. **`NEO` / `NEO_JAX`** -- Computes effective ripple (epsilon_eff), a screening/optimization diagnostic. **NOT a transport state variable** -- does not feed into profile evolution. Runs in parallel with the transport code.
 2. **`SFINCS` / `sfincs_jax`** -- Solves the full drift-kinetic equation for neoclassical particle flux, heat flux, bootstrap current, and ambipolar E_r. Feeds `NEOPAX` (Stage 5).
-3. **`monkes`** -- Builds a monoenergetic D_ij transport coefficient database. Feeds `NEOPAX` (Stage 5).
 
-**`sfincs_jax` and `monkes` are alternatives**, not parallel sub-stages. Only one is needed: `sfincs_jax` provides full drift-kinetic fluxes while `monkes` provides a monoenergetic D_ij database. Either can feed `NEOPAX` (Stage 5).
+**Position in pipeline:** `NEO_JAX` receives `boozmn_*.nc` from Stage 2 (Boozer). `sfincs_jax` receives `wout_*.nc` directly from Stage 1 (Equilibrium). Stage 3 runs in parallel with Stage 4 (Turbulence).
 
-**Position in pipeline:** `NEO_JAX` and `monkes` receive `boozmn_*.nc` from Stage 2 (Boozer). `sfincs_jax` receives `wout_*.nc` directly from Stage 1 (Equilibrium). Stage 3 runs in parallel with Stage 4 (Turbulence).
-
-**Reference:** `stellarator_workflow.tex`, Sections 4.4-4.6; `stellarator_io_reference.tex`, Sections 3.4-3.6.
+**Reference:** `stellarator_workflow.tex`, Sections 4.4-4.5; `stellarator_io_reference.tex`, Sections 3.4-3.5.
 
 ---
 
@@ -157,76 +154,6 @@ When Phi1 is included, coupled to quasineutrality.
 
 ---
 
-## Sub-Stage 3c: `monkes` (Monoenergetic Coefficients)
-
-### Codes
-
-**`monkes` (JAX-native):** <https://github.com/f0uriest/monkes>
-
-### Input Specification
-
-Reference: `stellarator_io_reference.tex`, Section 3.6.
-
-| Field | Type | Description | Source |
-|-------|------|-------------|--------|
-| Field object | `DESC` equilibrium or equivalent | Magnetic field representation at a single surface | Stage 1 (`DESC`) or Stage 2 |
-| Species Maxwellians | in-memory | Species definitions | User-specified |
-| E_r | scalar (float) | Radial electric field | User-specified / scan |
-| Speed / nu | scalar (float) | Particle speed / collisionality | User-specified / scan |
-| Pitch-angle resolution | int | Number of Legendre modes | User-specified |
-
-In database-building mode: the solve is repeated over collisionality (nu_v) and E_r grids.
-
-#### Input Validation
-
-> [!TODO]
-> See [I/O Validation section](../guide.md#io-validation).
-
-### Output Specification
-
-Reference: `stellarator_io_reference.tex`, Section 3.6.
-
-**Core output:** D_ij transport matrix (in-memory or HDF5)
-
-| Field | Type | Description | Used As |
-|-------|------|-------------|---------|
-| `D11` | array | Monoenergetic transport coefficient (1,1) | **NEOPAX input** |
-| `D13` | array | Monoenergetic transport coefficient (1,3) | **NEOPAX input** |
-| `D33` | array | Monoenergetic transport coefficient (3,3) | **NEOPAX input** |
-| `D12`, `D21`, `D22`, `D23`, `D31`, `D32` | arrays | Remaining matrix elements | Analysis |
-| `Er` | array | Radial electric field grid | **NEOPAX input** |
-| `Er_tilde` | array | Normalized E_r | **NEOPAX input** |
-| `drds` | array | Radial coordinate Jacobian | **NEOPAX input** |
-| `rho` | array | Radial coordinate | **NEOPAX input** |
-| `nu_v` | array | Collisionality grid | **NEOPAX input** |
-| `f` | array | Perturbed distribution function | Analysis only |
-| `s` | array | Source vector | Analysis only |
-
-**Key handoff:** `NEOPAX`'s database reader consumes the **reduced subset**: D11, D13, D33, Er, Er_tilde, drds, rho, nu_v. The full distribution f and source s are NOT part of that handoff.
-
-#### Output Validation
-
-> [!TODO]
-> See [I/O Validation section](../guide.md#io-validation).
-
-### Governing Equations
-
-Legendre-expanded pitch-angle operators:
-
-$$L_k(f) = \frac{k}{2k-1}\left[\mathbf{b}\cdot\nabla f + \frac{k-1}{2}\frac{\mathbf{b}\cdot\nabla B}{B}f\right]$$
-
-$$U_k(f) = \frac{k+1}{2k+3}\left[\mathbf{b}\cdot\nabla f - \frac{k+2}{2}\frac{\mathbf{b}\cdot\nabla B}{B}f\right]$$
-
-$$D_k(f) = -\frac{\hat{E}_r}{\psi_r\langle B^2\rangle}\mathbf{B}\times\nabla\psi\cdot\nabla f + \frac{k(k+1)}{2}\hat\nu f$$
-
-The monoenergetic coefficients are assembled into:
-
-$$D_{ij} = \begin{pmatrix} D_{11} & D_{12} & D_{13} \\ D_{21} & D_{22} & D_{23} \\ D_{31} & D_{32} & D_{33} \end{pmatrix}$$
-
-**Reference:** `stellarator_workflow.tex`, Section 4.6.
-
----
-
 ## Installation & Platform
 
 **`sfincs`:** Install via the Pixi environment. From the repo root:
@@ -242,14 +169,6 @@ pixi install --environment stage-3-sfincs
 ```
 
 See `docs/mvp-pipeline.md` for run commands and I/O details.
-
-**`monkes`:** Install from source:
-
-```bash
-git clone https://github.com/eduardolneto/monkes.git
-cd monkes
-pip install .
-```
 
 > [!TODO]
 > Document installation instructions and platform notes for `NEO_JAX` and `NEO`.
@@ -299,11 +218,6 @@ Alternative implementation to `sfincs_jax`. Consumes the same input namelist and
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
-**`monkes`:** More involved than a single command. See `stages/stage3-neoclassical/run_monkes.py` for a reference script that generates a D_ij database across radial positions, electric fields, and collisionality.
-
-**Input:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` + `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`
-**Output:** `stages/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5`
-
 > [!TODO]
 > Add standalone run scripts and workflows for `NEO_JAX`, `NEO`, and `SFINCS`.
 
@@ -332,7 +246,7 @@ Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-3-sfincs-cpu` and `st
 See [guide](../guide.md#container-architecture) for full architecture details.
 
 > [!TODO]
-> Define container specifications for `NEO_JAX`, `NEO`, `monkes`, and `SFINCS`.
+> Define container specifications for `NEO_JAX`, `NEO`, and `SFINCS`.
 
 ---
 
