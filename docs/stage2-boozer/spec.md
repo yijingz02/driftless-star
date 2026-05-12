@@ -87,7 +87,7 @@ Reference: `stellarator_io_reference.tex`, Section 3.2.
 
 ### Subset Handed to Next Stage
 
-`NEO` and `NEO_JAX` need the Boozer spectrum and radial profiles. `SFINCS`/`sfincs_jax` use the same Boozer geometry. `monkes` and `NEOPAX` use the Boozer spectrum through direct field or file readers.
+`NEO` and `NEO_JAX` need the Boozer spectrum and radial profiles. `SFINCS`/`sfincs_jax` use the same Boozer geometry. `NEOPAX` uses the Boozer spectrum through direct field or file readers.
 
 ### Outputs Used as Objectives
 

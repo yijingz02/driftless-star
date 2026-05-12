@@ -19,16 +19,15 @@ StellaForge is a **recipe repo**: it contains environment definitions, container
 |-------|------|-------------|--------------|------|
 | 1 | Equilibrium | `vmec_jax`, `DESC` | `VMEC++` | `docs/stage1-equilibrium/spec.md` |
 | 2 | Boozer Transform | `booz_xform_jax` | `BOOZ_XFORM` | `docs/stage2-boozer/spec.md` |
-| 3 | Neoclassical | `NEO_JAX`, `sfincs_jax` / `monkes` | `NEO`, `SFINCS` | `docs/stage3-neoclassical/spec.md` |
+| 3 | Neoclassical | `NEO_JAX`, `sfincs_jax` | `NEO`, `SFINCS` | `docs/stage3-neoclassical/spec.md` |
 | 4 | Turbulence | `SPECTRAX-GK` | `GX`, `GENE` | `docs/stage4-turbulence/spec.md` |
 | 5 | Transport | `NEOPAX` | `Trinity3D` | `docs/stage5-transport/spec.md` |
 
-Forward-pass chain: `vmec_jax` -> `booz_xform_jax` -> (`sfincs_jax` / `monkes`) -> `SPECTRAX-GK` -> `NEOPAX`
+Forward-pass chain: `vmec_jax` -> `booz_xform_jax` -> `sfincs_jax` -> `SPECTRAX-GK` -> `NEOPAX`
 
 **Key notes:**
 - `NEO_JAX` is **not** in the forward-pass chain. It computes epsilon_eff as a screening/optimization diagnostic only and does not feed Stage 5.
-- `sfincs_jax` and `monkes` are **alternatives**, not parallel. Only one is needed: `sfincs_jax` provides full drift-kinetic fluxes while `monkes` provides a monoenergetic D_ij database. Either can feed `NEOPAX` (Stage 5).
-- `NEO_JAX` runs independently alongside whichever of `sfincs_jax` / `monkes` is selected.
+- `NEO_JAX` runs in parallel with `sfincs_jax`; its eps_eff output is a diagnostic and is not consumed by Stage 5.
 - Stages 3 and 4 run in parallel after Stage 2.
 
 ### Naming Conventions
@@ -44,7 +43,7 @@ Forward-pass chain: `vmec_jax` -> `booz_xform_jax` -> (`sfincs_jax` / `monkes`) 
 
 Currently, most inter-stage communication is **file-based** using standard physics file formats:
 - **NetCDF** (`.nc`): equilibrium (`wout_*.nc`), Boozer (`boozmn_*.nc`), turbulence outputs
-- **HDF5** (`.h5`): neoclassical outputs (`sfincsOutput.h5`), `monkes` D_ij databases, `NEOPAX` profiles
+- **HDF5** (`.h5`): neoclassical outputs (`sfincsOutput.h5`), `NEOPAX` profiles
 
 Snakemake rules define which files connect which stages. Each stage's `spec.md` is the authoritative source for required/optional fields in its output files. Where alternative implementations use different file formats or field names, a wrapper or adapter layer will be needed to translate between them.
 
@@ -52,8 +51,7 @@ Snakemake rules define which files connect which stages. Each stage's `spec.md` 
 
 1. **Screening-only outputs vs. transport state variables.** `NEO_JAX`'s epsilon_eff is central to ranking candidate geometries but is NOT advanced by a transport solver. It should not be wired as a transport input.
 2. **Dual-role outputs.** Heat/particle flux from `SPECTRAX-GK` and neoclassical flux from `SFINCS` are simultaneously optimization objectives (to minimize) AND direct numerical inputs for transport profile evolution.
-3. **`monkes` -> `NEOPAX` handoff.** `NEOPAX`'s database reader consumes a reduced subset of the `monkes` D_ij HDF5 output (`D11`, `D13`, `D33`, `Er`, `Er_tilde`, `drds`, `rho`, `nu_v`). Agreement on exact field names and shapes is required.
-4. **Turbulence coupling.** `NEOPAX` has turbulence-coupling utilities, but the public examples center on the neoclassical reduced model from `monkes`. The `SPECTRAX-GK` -> `NEOPAX` path (Stage 4 -> Stage 5) is not yet the default.
+3. **Turbulence coupling.** `NEOPAX` has turbulence-coupling utilities, but the `SPECTRAX-GK` -> `NEOPAX` path (Stage 4 -> Stage 5) is not yet the default.
 
 ### Working with This Codebase
 
