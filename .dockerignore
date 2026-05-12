@@ -1,0 +1,45 @@
+# Pixi local environments and metadata
+.pixi/*
+
+# Apptainer images
+*.sif
+
+# VCS, CI, and editor metadata
+.git/
+.github/
+.gitattributes
+.gitmodules
+.gitignore
+.obsidian/
+.claude/
+.vscode/
+.idea/
+.DS_Store
+
+# Python / test caches
+__pycache__/
+*.py[codz]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Snakemake metadata
+.snakemake/
+
+# Repo content not needed inside the image
+tests/
+docs/
+stellarator_workflow/
+figs/
+logs/
+*.log
+
+# Top-level docs that don't belong in container layers
+README.md
+CLAUDE.md
+LICENSE
+
+# Stage data: only pixi.toml/lock is needed for `pixi install`; runtime
+# stage I/O is bind-mounted at run time, so excluding from build context
+# keeps images small and builds fast.
+stages/

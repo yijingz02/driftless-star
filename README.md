@@ -12,7 +12,7 @@ graph LR
     S1 -->|"wout_*.nc"| S2["<b>Stage 2</b><br/>Boozer Transform"]
     S2 -->|"boozmn_*.nc"| S3["<b>Stage 3</b><br/>Neoclassical"]
     S2 -->|"geometry"| S4["<b>Stage 4</b><br/>Turbulence"]
-    S3 -->|"D_ij, fluxes"| S5["<b>Stage 5</b><br/>Transport"]
+    S3 -->|"fluxes"| S5["<b>Stage 5</b><br/>Transport"]
     S4 -->|"heat/particle flux"| S5
     S5 --> OUT["n(r), T(r), E_r(r)<br/>P_fus, Q"]
 ```
@@ -36,7 +36,7 @@ Stages 3 and 4 run in parallel. Each stage should eventually be independently sw
 |-------|---------|-------------|--------------|
 | 1. Equilibrium | Ideal-MHD force balance | [vmec_jax](https://github.com/uwplasma/vmec_jax), [DESC](https://github.com/PlasmaControl/DESC) | [VMEC++](https://github.com/proximafusion/vmecpp) |
 | 2. Boozer Transform | Coordinate transform | [booz_xform_jax](https://github.com/uwplasma/booz_xform_jax) | [BOOZ_XFORM](https://github.com/hiddenSymmetries/booz_xform) |
-| 3. Neoclassical | Effective ripple, drift-kinetic, monoenergetic | [NEO_JAX](https://github.com/uwplasma/NEO_JAX), [sfincs_jax](https://github.com/uwplasma/sfincs_jax), [monkes](https://github.com/eduardolneto/monkes) | [NEO](https://github.com/PrincetonUniversity/STELLOPT), [SFINCS](https://github.com/landreman/sfincs) |
+| 3. Neoclassical | Effective ripple, drift-kinetic | [NEO_JAX](https://github.com/uwplasma/NEO_JAX), [sfincs_jax](https://github.com/uwplasma/sfincs_jax) | [NEO](https://github.com/PrincetonUniversity/STELLOPT), [SFINCS](https://github.com/landreman/sfincs) |
 | 4. Turbulence | Gyrokinetic equation | [SPECTRAX-GK](https://github.com/uwplasma/SPECTRAX-GK) | [GX](https://bitbucket.org/gyrokinetics/gx), [GENE](https://genecode.org) |
 | 5. Transport | Profile evolution, power balance | [NEOPAX](https://github.com/uwplasma/NEOPAX) | [Trinity3D](https://bitbucket.org/gyrokinetics/t3d) |
 
@@ -44,7 +44,7 @@ Stages 3 and 4 run in parallel. Each stage should eventually be independently sw
 
 **Phase 1** work goes into the stage spec docs (`docs/stage{N}-{name}/spec.md`) -- the "TO BE COMPLETED" sections.
 
-**Phase 2** adds containers and tests. Dependencies are managed through Pixi (e.g., `mvp/pixi.toml` + `mvp/pixi.lock`), and a single templated Dockerfile (e.g., `mvp/Dockerfile`) builds all stages via build arguments. See [guide](docs/guide.md#container-architecture) for details.
+**Phase 2** adds containers and tests. Dependencies are managed through Pixi (`pixi.toml` + `pixi.lock`), and a single templated `Dockerfile` builds all stages via build arguments. See [guide](docs/guide.md#container-architecture) for details.
 
 ## Workflow
 
@@ -68,7 +68,6 @@ Install the primary code, document the API and convergence behavior, write examp
   - [ ] `BOOZ_XFORM`
 - [ ] Stage 3 -- Neoclassical
   - [ ] `sfincs_jax`
-  - [ ] `monkes`
   - [ ] `NEO_JAX`
   - [ ] `NEO`
   - [ ] `SFINCS`
@@ -94,7 +93,6 @@ Containerize stages and write tests. Full checklist in the [Guide](docs/guide.md
 - [ ] Stage 3 -- Neoclassical
   - [ ] `NEO_JAX`
   - [x] `sfincs_jax`
-  - [ ] `monkes`
   - [ ] `NEO`
   - [x] `SFINCS`
 - [ ] Stage 4 -- Turbulence

@@ -2,7 +2,7 @@
 # CLI overrides win: `snakemake --config key=value` beats any value here.
 
 # Equilibrium / run identifier.
-run_name: HSX_QHS_vacuum_ns201
+run_name: HSX_vacuum_ns201_quickrun
 
 # Stage 3 neoclassical backend. One of: sfincs_jax, sfincs_fortran.
 stage3_backend: sfincs_jax

@@ -11,16 +11,15 @@ headline numbers ($P_\text{fus}$, $Q$).
 solver).  `Trinity3D` is the traditional alternative with mature `GX`+`SFINCS`
 coupling.
 
-**Position in pipeline:** Receives neoclassical transport data from Stage 3 (`monkes` or `sfincs_jax`),
+**Position in pipeline:** Receives neoclassical transport data from Stage 3 (`sfincs_jax`),
 turbulent fluxes from Stage 4 (`SPECTRAX-GK`), and geometry from Stage 1/2.
 Produces the forward-pass output: updated $n(r)$, $T(r)$, $E_r(r)$,
 $P_\text{fus}$, $Q$.
 
 **Important note on `NEOPAX` turbulence coupling:** `NEOPAX` has
-turbulence-coupling utilities, but the public examples center on the
-neoclassical reduced model consuming `monkes` $D_{ij}$.  Coupling `SPECTRAX-GK`
-turbulent flux into `NEOPAX` is a coordination point with the Stage 4 owner.  The
-alternative path (`GX` -> `Trinity3D`) has mature, tested turbulence coupling.
+turbulence-coupling utilities, but coupling `SPECTRAX-GK` turbulent flux into
+`NEOPAX` is a coordination point with the Stage 4 owner.  The alternative path
+(`GX` -> `Trinity3D`) has mature, tested turbulence coupling.
 
 **Outer-loop handoff (future, not forward pass):** Updated pressure and current
 profiles feed back to Stage 1 for the next iteration.
@@ -39,8 +38,8 @@ Reference: `stellarator_workflow.tex`, Sections 4.8--4.9;
 
 - **Repository:** <https://github.com/uwplasma/NEOPAX>
 - **Language:** Python / JAX
-- **Role:** Reduced neoclassical transport and profile evolution using `monkes`
-  $D_{ij}$ databases.  Uses diffrax for JAX-native ODE integration.
+- **Role:** Reduced neoclassical transport and profile evolution from
+  neoclassical flux inputs (Stage 3).  Uses diffrax for JAX-native ODE integration.
 
 ### Trinity3D (Alternative)
 
@@ -52,7 +51,7 @@ Reference: `stellarator_workflow.tex`, Sections 4.8--4.9;
 
 ### Installation & Platform
 
-**`NEOPAX`:** Install via the Pixi environment. From inside `mvp/`:
+**`NEOPAX`:** Install via the Pixi environment. From the repo root:
 
 ```
 pixi install --environment stage-5-neopax
@@ -75,20 +74,6 @@ Reference: `stellarator_io_reference.tex`, Sections 3.11-3.12.
 |-------|------|-------------|--------|
 | `wout_*.nc` | NetCDF | VMEC equilibrium geometry | Stage 1 |
 | `boozmn_*.nc` | NetCDF | Boozer-coordinate equilibrium | Stage 2 |
-| $D_{ij}$ database | HDF5 | Monoenergetic transport coefficients | Stage 3 (monkes) |
-
-**$D_{ij}$ database fields consumed by `NEOPAX` reader:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `D11` | array | Monoenergetic coefficient (1,1) |
-| `D13` | array | Monoenergetic coefficient (1,3) |
-| `D33` | array | Monoenergetic coefficient (3,3) |
-| `Er` | array | Radial electric field grid |
-| `Er_tilde` | array | Normalized $E_r$ |
-| `drds` | array | Radial coordinate Jacobian |
-| `rho` | array | Radial coordinate |
-| `nu_v` | array | Collisionality grid |
 
 **Optional profile initialization:** NTSS-like HDF5 files with arrays: `r`,
 `Er`, `Te`, `ne`, `Pressure`, `I_bs`, and related transport quantities.
@@ -283,13 +268,8 @@ Reference: `stellarator_workflow.tex`, Sections 4.8--4.9.
 
 ## Scripts & Workflows
 
-**`NEOPAX`:** Run inside a script. See `mvp/stage5-transport/run_NEOPAX.py` as a reference.
-
-**Input:** `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` + `mvp/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc` + `mvp/stage3-neoclassical/output/Monoenergetic_database_VMEC_s_coordinate_HSX.h5` (if using `monkes`)
-**Output:** `mvp/stage5-transport/output/NEOPAX_output.h5`
-
-> [!NOTE]
-> `NEOPAX`, being the final stage, has additional complexities. If `monkes` is used, `NEOPAX` consumes a pre-built D_ij database. If `sfincs_jax` is used, `NEOPAX` runs a loop to optimize over different fluxes (more computationally expensive).
+> [!TODO]
+> A reference run script for `NEOPAX` will be added once the Stage 3 → Stage 5 handoff via `sfincs_jax` is designed.
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
@@ -309,11 +289,11 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## Container Specification (Phase 2)
 
-**`NEOPAX`:** Built from the single templated `mvp/Dockerfile` using build arguments:
+**`NEOPAX`:** Built from the single templated `Dockerfile` using build arguments:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-5-neopax mvp/        # CPU
-docker build --build-arg ENVIRONMENT=stage-5-neopax-gpu --build-arg CUDA_VERSION=12 mvp/  # GPU
+docker build --build-arg ENVIRONMENT=stage-5-neopax .        # CPU
+docker build --build-arg ENVIRONMENT=stage-5-neopax-gpu --build-arg CUDA_VERSION=12 .  # GPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-5-neopax-cpu` and `stage-5-neopax-gpu`. CI builds via `.github/workflows/containers.yml`.

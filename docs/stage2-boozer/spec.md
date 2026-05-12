@@ -26,13 +26,13 @@ Transforms a VMEC-style equilibrium into Boozer coordinates. Boozer coordinates 
 
 ### Installation & Platform
 
-**`booz_xform` (legacy Fortran/Python):** Install via the Pixi environment. From inside `mvp/`:
+**`booz_xform` (legacy Fortran/Python):** Install via the Pixi environment. From the repo root:
 
 ```
 pixi install --environment stage-2-booz
 ```
 
-**`booz_xform_jax`:** Install via the Pixi environment. From inside `mvp/`:
+**`booz_xform_jax`:** Install via the Pixi environment. From the repo root:
 
 ```
 pixi install --environment stage-2-booz-jax
@@ -87,7 +87,7 @@ Reference: `stellarator_io_reference.tex`, Section 3.2.
 
 ### Subset Handed to Next Stage
 
-`NEO` and `NEO_JAX` need the Boozer spectrum and radial profiles. `SFINCS`/`sfincs_jax` use the same Boozer geometry. `monkes` and `NEOPAX` use the Boozer spectrum through direct field or file readers.
+`NEO` and `NEO_JAX` need the Boozer spectrum and radial profiles. `SFINCS`/`sfincs_jax` use the same Boozer geometry. `NEOPAX` uses the Boozer spectrum through direct field or file readers.
 
 ### Outputs Used as Objectives
 
@@ -149,7 +149,7 @@ where $w$ is reconstructed from the original covariant field harmonics.
 
 ## Scripts & Workflows
 
-**`booz_xform` (via Pixi):** From inside `mvp/`:
+**`booz_xform` (via Pixi):** From the repo root:
 
 ```
 pixi run stage-2-booz
@@ -157,17 +157,17 @@ pixi run stage-2-booz
 
 Smoke-test task: verifies the `booz_xform` package is importable. A full end-to-end example for the legacy code is TBD.
 
-**`booz_xform_jax` (via Pixi):** From inside `mvp/`:
+**`booz_xform_jax` (via Pixi):** From the repo root:
 
 ```
 pixi run -e stage-2-booz-jax stage-2-booz
 ```
 
 > [!NOTE]
-> The Stage 2 JAX driver now takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec`, or by copying the reference wout from `stage1-equilibrium/expected_output/`.
+> The Stage 2 JAX driver now takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec` first.
 
-**Input:** `mvp/stage1-equilibrium/output/wout_HSX_QHS_vacuum_ns201.nc` (from Stage 1)
-**Output:** `mvp/stage2-boozer/output/boozmn_HSX_QHS_vacuum_ns201.nc`
+**Input:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` (from Stage 1)
+**Output:** `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
@@ -184,19 +184,19 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## Container Specification (Phase 2)
 
-**`booz_xform` (legacy Fortran/Python):** Built from the single templated `mvp/Dockerfile` using build arguments:
+**`booz_xform` (legacy Fortran/Python):** Built from the single templated `Dockerfile` using build arguments:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-2-booz mvp/  # CPU
+docker build --build-arg ENVIRONMENT=stage-2-booz .  # CPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-2-booz-cpu`.
 
-**`booz_xform_jax`:** Built from the single templated `mvp/Dockerfile` using build arguments:
+**`booz_xform_jax`:** Built from the single templated `Dockerfile` using build arguments:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-2-booz-jax mvp/                                         # CPU
-docker build --build-arg ENVIRONMENT=stage-2-booz-jax-gpu --build-arg CUDA_VERSION=12 mvp/  # GPU
+docker build --build-arg ENVIRONMENT=stage-2-booz-jax .                                            # CPU
+docker build --build-arg ENVIRONMENT=stage-2-booz-jax-gpu --build-arg CUDA_VERSION=12 .  # GPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-2-booz-jax-cpu` and `stage-2-booz-jax-gpu`. CI builds via `.github/workflows/containers.yml`.
