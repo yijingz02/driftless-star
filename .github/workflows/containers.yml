@@ -7,18 +7,24 @@ on:
     tags:
       - 'v*'
     paths:
-      - 'pixi.toml'
-      - 'pixi.lock'
-      - 'Dockerfile'
-      - '.dockerignore'
-      - 'apptainer.def'
+      - 'stages/pixi.toml'
+      - 'stages/pixi.lock'
+      - 'stages/Dockerfile'
+      - 'stages/.dockerignore'
+      - 'stages/apptainer.def'
+      - '.github/workflows/containers.yml'
+      - '.github/actions/build-docker/**'
+      - '.github/actions/build-apptainer/**'
   pull_request:
     paths:
-      - 'pixi.toml'
-      - 'pixi.lock'
-      - 'Dockerfile'
-      - '.dockerignore'
-      - 'apptainer.def'
+      - 'stages/pixi.toml'
+      - 'stages/pixi.lock'
+      - 'stages/Dockerfile'
+      - 'stages/.dockerignore'
+      - 'stages/apptainer.def'
+      - '.github/workflows/containers.yml'
+      - '.github/actions/build-docker/**'
+      - '.github/actions/build-apptainer/**'
   release:
     types: [published]
   workflow_dispatch:
