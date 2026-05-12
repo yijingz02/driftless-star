@@ -289,11 +289,11 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## Container Specification (Phase 2)
 
-**`NEOPAX`:** Built from the single templated `Dockerfile` using build arguments:
+**`NEOPAX`:** Built from the single templated `stages/Dockerfile` using build arguments:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-5-neopax .        # CPU
-docker build --build-arg ENVIRONMENT=stage-5-neopax-gpu --build-arg CUDA_VERSION=12 .  # GPU
+docker build --build-arg ENVIRONMENT=stage-5-neopax stages/        # CPU
+docker build --build-arg ENVIRONMENT=stage-5-neopax-gpu --build-arg CUDA_VERSION=12 stages/  # GPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-5-neopax-cpu` and `stage-5-neopax-gpu`. CI builds via `.github/workflows/containers.yml`.

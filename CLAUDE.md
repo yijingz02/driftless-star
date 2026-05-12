@@ -68,7 +68,7 @@ Snakemake rules define which files connect which stages. Each stage's `spec.md` 
 ### Phase-Specific Rules
 
 - **Phase 1 (Document & Run):** Install and run the primary code, document the API and convergence behavior, write example scripts, set up W&B tracking. No cross-stage Python imports: all inter-stage communication is through files (e.g. NetCDF/HDF5). This is necessary to maintain swappability. Do not restructure upstream code.
-- **Phase 2 (Containerize & Test):** Build container environments, write unit/regression/integration tests. Container changes must pass integration tests before merge. See `docs/guide.md#container-architecture` for the Pixi + Dockerfile approach.
+- **Phase 2 (Containerize & Test):** Build container environments, write unit/regression/integration tests. Container changes must pass integration tests before merge. See `docs/guide.md#container-architecture` for the split-Pixi-workspace + `stages/Dockerfile` approach.
 - **Phase 3 (Integrate):** Snakemake rules should support config-driven implementation selection. Stages 3 and 4 run in parallel after Stage 2. `NEO_JAX`'s epsilon_eff is a screening metric only -- it should not be wired as a dependency for Stage 5.
 
 ---
@@ -203,10 +203,12 @@ Snakemake rules define which files connect which stages. Each stage's `spec.md` 
 - Keep Dockerfiles minimal -- install only production dependencies.
 
 **StellaForge container architecture** (see `docs/guide.md#container-architecture` for full details):
-- All dependencies are managed through Pixi (`pixi.toml` + `pixi.lock` at the repo root).
-- A single templated `Dockerfile` at the repo root builds all stages using `ghcr.io/prefix-dev/pixi:noble` as the base image. Build arguments (`ENVIRONMENT`, `CUDA_VERSION`) select the target stage and GPU support.
-- Container images are published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). CI builds all stage variants from the single Dockerfile using a GitHub Actions matrix.
-- Source-built upstream packages are pinned to exact git commit SHAs in `pixi.toml`.
+- The repo has two Pixi workspaces with decoupled responsibilities:
+  - Root `pixi.toml` defines a single `pipeline` environment (`snakemake-minimal`, `graphviz`, `pytest`) for orchestration. Snakemake runs on the execution node directly -- it is never containerized, because nesting containers is fragile and not widely supported.
+  - `stages/pixi.toml` defines the per-stage physics environments. These are only ever consumed by the container builder, so they are isolated from the orchestration env.
+- A single templated `stages/Dockerfile` builds all stage images using `ghcr.io/prefix-dev/pixi:noble` as the base. The docker build context is `stages/`, and build arguments (`ENVIRONMENT`, `CUDA_VERSION`) select the target stage and GPU support.
+- Container images are published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). CI builds all stage variants from `stages/Dockerfile` using a GitHub Actions matrix.
+- Source-built upstream packages are pinned to exact git commit SHAs in `stages/pixi.toml`.
 
 ### Performance & Memory Management
 

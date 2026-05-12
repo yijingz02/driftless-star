@@ -92,8 +92,8 @@ Work through these steps in order. Each step should result in updates to the sta
 
 ### Step 1: Install and Run the Primary Code
 
-- Install the primary code using the Pixi environment for the stage (see `pixi.toml` and `docs/mvp-pipeline.md` for install/run commands)
-- If the code is not yet in a Pixi environment, ensure it can be installed via conda-forge or PyPI, add it to the relevant `pixi.toml`, and regenerate the lock file
+- Install the primary code using the Pixi environment for the stage (see `stages/pixi.toml` and `docs/mvp-pipeline.md` for install/run commands)
+- If the code is not yet in a Pixi environment, ensure it can be installed via conda-forge or PyPI, add it to `stages/pixi.toml`, and regenerate the lock file
 - Get it running locally on a reference case
 - Document any installation issues, version requirements, or platform-specific notes
 - Fill in the "Installation & Platform" section of the relevant spec
@@ -160,23 +160,29 @@ After Phase 1 is complete for a stage, move to containerization and testing.
 
 StellaForge is a **recipe repo**: it contains everything needed to build and run the containerized pipeline, but does not contain the upstream solver code itself.
 
-**Pixi-based environments.** Dependencies are managed through the root `pixi.toml`, locked in `pixi.lock`. Stages with Pixi environments defined have named environments (e.g., `stage-1-vmec`, `stage-1-vmec-gpu`) that fully specify the dependency stack.
+**Two decoupled Pixi workspaces.** The repo splits dependency management along the orchestration / physics boundary:
+- **Root `pixi.toml`** -- a single `pipeline` environment (`snakemake-minimal`, `graphviz`, `pytest`). Installed directly on the execution node; Snakemake is never containerized because nested containers are fragile and not widely supported on shared compute.
+- **`stages/pixi.toml`** -- per-stage physics environments (e.g., `stage-1-vmec`, `stage-1-vmec-gpu`) that fully specify each stack. These are only consumed by the container builder, so they are entirely isolated from the orchestration env.
 
-**Templated container images.** A single shared `Dockerfile` and `apptainer.def` at the repo root use build arguments to select the target environment at build time:
+Each workspace has its own lockfile (`pixi.lock` / `stages/pixi.lock`).
+
+**Templated container images.** A single shared `stages/Dockerfile` and `stages/apptainer.def` use build arguments to select the target environment at build time:
 - `ENVIRONMENT` -- the Pixi environment name (e.g., `stage-1-vmec`, `stage-2-booz-jax-gpu`). Must be passed explicitly when building locally:
-   - `docker build --build-arg ENVIRONMENT=stage-1-vmec .`
-   - `apptainer build --build-arg ENVIRONMENT="stage-1-vmec" stage-1-vmec.sif apptainer.def`
+   - `docker build --build-arg ENVIRONMENT=stage-1-vmec stages/`
+   - `cd stages && apptainer build --build-arg ENVIRONMENT="stage-1-vmec" stage-1-vmec.sif apptainer.def`
 - `CUDA_VERSION` -- set for GPU builds (e.g., `12`), left empty for CPU builds
 
-The Dockerfile uses a multi-stage build on a `ghcr.io/prefix-dev/pixi:noble` base image. See `Dockerfile` for implementation details.
+The Dockerfile uses a multi-stage build on a `ghcr.io/prefix-dev/pixi:noble` base image. See `stages/Dockerfile` for implementation details.
 
 **Container images** are published to GHCR at `ghcr.io/rkhashmani/stellaforge`. For MVP, the tags follow the pattern `stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). Apptainer container images are prefixed with `apptainer-`. CI builds all stage variants from the container image definition files using a GitHub Actions matrix. See `.github/workflows/containers.yml` and `.github/actions/build-docker/action.yml` for the CI setup.
 
-**Adding or updating a dependency:**
-1. Update the relevant `pixi.toml` (add/change the dependency or git rev)
-2. Run `pixi install` (without `--locked`) to regenerate the lock file
-3. Commit both the `pixi.toml` and `pixi.lock`
+**Adding or updating a stage dependency:**
+1. Update `stages/pixi.toml` (add/change the dependency or git rev)
+2. Run `pixi lock --manifest-path stages/pixi.toml` (or `pixi install ...` to also install locally)
+3. Commit both `stages/pixi.toml` and `stages/pixi.lock`
 4. CI rebuilds affected container images on merge
+
+Updating the orchestration env follows the same pattern against the root `pixi.toml` / `pixi.lock`.
 
 ### Verify Container I/O
 
@@ -273,7 +279,7 @@ Each stage's `spec.md` lists the specific schema and physics checks under its In
 
 ## Known Risks
 
-**1. Source-build fragility.** Some upstream codes have no release versions and must be built from source. Pin to a tested git commit SHA in `pixi.toml`. Test builds in CI and maintain fallback known-good revisions.
+**1. Source-build fragility.** Some upstream codes have no release versions and must be built from source. Pin to a tested git commit SHA in `stages/pixi.toml`. Test builds in CI and maintain fallback known-good revisions.
 
 ## Coding Conventions
 
