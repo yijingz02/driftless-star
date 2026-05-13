@@ -877,6 +877,21 @@ def _run_tasks_in_parallel(
                     ]
                     if gpu_id is not None:
                         msg.append(f"gpu={gpu_id}")
+                    if code < 0 or code in (137, 143):
+                        msg.append(
+                            f"worker exited via signal (returncode={code}) "
+                            "with no Python traceback. This signature usually "
+                            "means the container ran out of memory and the "
+                            "kernel killed the worker. Try one of:"
+                        )
+                        msg.append(
+                            f"  - lower --max-parallel "
+                            f"(current run: {int(args.max_parallel)})"
+                        )
+                        msg.append(
+                            "  - increase the RAM available to the workers "
+                            "(either on the host or in the container runtime)"
+                        )
                     if stdout.strip():
                         msg.append("stdout:\n" + stdout.strip())
                     if stderr.strip():
