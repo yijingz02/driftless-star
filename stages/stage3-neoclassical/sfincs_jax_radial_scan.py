@@ -16,12 +16,12 @@ sfincs_jax. It:
    ``Upar`` that can be read by NEOPAX's ``FluxesRFileTransportModel``.
 7. optionally writes PNG summary plots for ``Gamma``, ``Q``, and ``Upar``.
 
-Default sfincs_jax resolution overrides used by this bridge:
-- ``Ntheta = 25``
-- ``Nzeta = 51``
-- ``Nxi = 100``
+Default sfincs_jax resolution overrides used by this bridge (quickrun smoke test):
+- ``Ntheta = 5``
+- ``Nzeta = 11``
+- ``Nxi = 12``
 - ``NL = 3``
-- ``Nx = 5``
+- ``Nx = 4``
 - ``solverTolerance = 1e-6``
 
 Important note on normalization:
@@ -70,7 +70,14 @@ except ModuleNotFoundError:  # pragma: no cover
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "sfincs_jax_flux_scan"
+SCRIPT_DIR = Path(__file__).resolve().parent
+STAGES_DIR = SCRIPT_DIR.parent
+
+DEFAULT_NEOPAX_CONFIG = (
+    STAGES_DIR / "stage5-transport" / "input" / "Solve_Transport_equations_noHe_radau_HSX_quickrun.toml"
+)
+DEFAULT_SFINCS_TEMPLATE = SCRIPT_DIR / "input" / "input.HSX_vacuum_ns201_quickrun"
+DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "output" / "HSX_vacuum_ns201_nx4_quickrun"
 
 
 @dataclass(frozen=True)
@@ -1193,15 +1200,19 @@ def build_parser() -> argparse.ArgumentParser:
             __doc__
             + "\n\n"
             + "Unless overridden on the command line, this script forces the following "
-            + "sfincs_jax resolution settings: "
-            + "Ntheta=25, Nzeta=51, Nxi=100, NL=3, Nx=5, solverTolerance=1e-6."
+            + "sfincs_jax resolution settings (quickrun smoke test): "
+            + "Ntheta=5, Nzeta=11, Nxi=12, NL=3, Nx=4, solverTolerance=1e-6."
         )
     )
-    p.add_argument("--neopax-config", required=False, default=None, help="Path to the NEOPAX transport TOML.")
+    p.add_argument(
+        "--neopax-config",
+        default=str(DEFAULT_NEOPAX_CONFIG),
+        help="Path to the NEOPAX transport TOML.",
+    )
     p.add_argument(
         "--profiles-source",
         choices=("transport_h5", "analytical"),
-        default="transport_h5",
+        default="analytical",
         help="Choose whether profiles come from transport_solution.h5 or from the TOML analytical profile block.",
     )
     p.add_argument(
@@ -1215,7 +1226,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=51,
         help="Number of rho grid points to reconstruct for profiles-source=analytical.",
     )
-    p.add_argument("--sfincs-template", required=False, default=None, help="Template sfincs_jax input.namelist.")
+    p.add_argument(
+        "--sfincs-template",
+        default=str(DEFAULT_SFINCS_TEMPLATE),
+        help="Template sfincs_jax input.namelist.",
+    )
     p.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="Output directory for runs and collected fluxes.")
     p.add_argument("--time-index", type=int, default=-1, help="Time index in transport_solution.h5. Default: final.")
     p.add_argument("--rho-indices", default=None, help="Comma-separated explicit rho indices.")
@@ -1226,11 +1241,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--include-phi1", dest="include_phi1", action="store_true", help="Force includePhi1 = true.")
     p.add_argument("--no-include-phi1", dest="include_phi1", action="store_false", help="Force includePhi1 = false.")
     p.set_defaults(include_phi1=None)
-    p.add_argument("--ntheta", type=int, default=25, help="Override Ntheta. Default: 25.")
-    p.add_argument("--nzeta", type=int, default=51, help="Override Nzeta. Default: 51.")
-    p.add_argument("--nxi", type=int, default=100, help="Override Nxi. Default: 100.")
+    p.add_argument("--ntheta", type=int, default=5, help="Override Ntheta. Default: 5.")
+    p.add_argument("--nzeta", type=int, default=11, help="Override Nzeta. Default: 11.")
+    p.add_argument("--nxi", type=int, default=12, help="Override Nxi. Default: 12.")
     p.add_argument("--nl", type=int, default=3, help="Override NL. Default: 3.")
-    p.add_argument("--nx", type=int, default=5, help="Override Nx. Default: 5.")
+    p.add_argument("--nx", type=int, default=4, help="Override Nx. Default: 4.")
     p.add_argument("--solver-tolerance", type=float, default=1.0e-6, help="Override solverTolerance. Default: 1e-6.")
     p.add_argument(
         "--dense-fp-max",
@@ -1240,7 +1255,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--backend", choices=("cpu", "gpu"), default="cpu", help="Parallel execution backend.")
     p.add_argument("--gpu-ids", default="0", help="Comma-separated GPU ids for backend=gpu.")
-    p.add_argument("--max-parallel", type=int, default=1, help="Maximum concurrent sfincs_jax runs.")
+    p.add_argument("--max-parallel", type=int, default=8, help="Maximum concurrent sfincs_jax runs.")
     p.add_argument("--cores-per-run", type=int, default=1, help="CPU cores per run for backend=cpu.")
     p.add_argument(
         "--worker-sharding",
@@ -1263,8 +1278,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=1,
         help="Number of same-worker warmup solves to discard before benchmark repeats.",
     )
-    p.add_argument("--plot", action="store_true", help="Write PNG plots of Gamma, Q, and Upar versus rho.")
-    p.add_argument("--verbose-workers", action="store_true", help="Allow verbose sfincs_jax worker logging.")
+    p.add_argument("--plot", dest="plot", action="store_true", help="Write PNG plots of Gamma, Q, and Upar versus rho.")
+    p.add_argument("--no-plot", dest="plot", action="store_false", help="Skip PNG plots.")
+    p.set_defaults(plot=True)
+    p.add_argument(
+        "--verbose-workers",
+        dest="verbose_workers",
+        action="store_true",
+        help="Allow verbose sfincs_jax worker logging.",
+    )
+    p.add_argument(
+        "--no-verbose-workers",
+        dest="verbose_workers",
+        action="store_false",
+        help="Silence sfincs_jax worker logging.",
+    )
+    p.set_defaults(verbose_workers=True)
     p.add_argument("--worker-payload", default=None, help=argparse.SUPPRESS)
     return p
 
@@ -1273,10 +1302,6 @@ def main() -> int:
     args = build_parser().parse_args()
     if args.worker_payload:
         return _run_single_worker_from_payload(Path(args.worker_payload).resolve())
-    if args.neopax_config is None:
-        raise ValueError("--neopax-config is required unless using the hidden worker mode.")
-    if args.sfincs_template is None:
-        raise ValueError("--sfincs-template is required unless using the hidden worker mode.")
     return cmd_main(args)
 
 

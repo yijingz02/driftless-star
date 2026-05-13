@@ -45,6 +45,9 @@ sfincs-jax = ">=1.1.0,<2"
 [feature.sfincs-jax.tasks.stage-3-sfincs]
 cmd = "sfincs_jax stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun --out stage3-neoclassical/output/sfincsOutput_quickrun.h5 --wout-path stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc"
 
+[feature.sfincs-jax.tasks.stage-3-sfincs-radial-scan]
+cmd = "python stage3-neoclassical/sfincs_jax_radial_scan.py"
+
 [feature.spectrax-gk.dependencies]
 spectraxgk = ">=1.5.0,<2"
 booz-xform-jax = ">=0.1.0,<0.2"

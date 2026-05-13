@@ -15,7 +15,7 @@ n_radial = 5
 [neoclassical]
 flux_model = "fluxes_r_file"
 entropy_model = "fluxes_r_file"
-neoclassical_file = "stage3-neoclassical/expected_output/my_sfincs_scan_parallel_nx4_HSX_TEST_2/sfincs_jax_flux_profiles.h5"
+neoclassical_file = "../../stage3-neoclassical/output/HSX_vacuum_ns201_nx4_quickrun/sfincs_jax_flux_profiles.h5"
 
 [turbulence]
 flux_model = "fluxes_r_file"
