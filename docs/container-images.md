@@ -7,13 +7,14 @@
 The Dockerfile lives in `stages/`, which is also the build context. From the repo root:
 
 ```
-docker build --build-arg <build-args> --tag <tag> stages/
+docker build --file stages/Dockerfile --build-arg <build-args> --tag <tag> stages/
 ```
 
 Example:
 
 ```
 docker build \
+    --file stages/Dockerfile \
     --build-arg ENVIRONMENT="stage-1-vmec" \
     --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu \
     stages/

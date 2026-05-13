@@ -245,8 +245,8 @@ See `docs/mvp-pipeline.md` for full I/O details.
 **`vmec_jax`:** Built from the single templated `stages/Dockerfile` using a build process morally equivalent to:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-1-vmec --platform linux/amd64 --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu stages/  # CPU
-docker build --build-arg CUDA_VERSION=12 --build-arg ENVIRONMENT=stage-1-vmec-gpu --platform linux/amd64 --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-gpu stages/  # GPU
+docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-1-vmec --platform linux/amd64 --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu stages/  # CPU
+docker build --file stages/Dockerfile --build-arg CUDA_VERSION=12 --build-arg ENVIRONMENT=stage-1-vmec-gpu --platform linux/amd64 --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-gpu stages/  # GPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu` and `stage-1-vmec-gpu`. CI builds via `.github/workflows/containers.yml`.
