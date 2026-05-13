@@ -436,7 +436,10 @@ def _prepare_input_text(
 
 def _infer_wout_path(config_path: Path, cfg: dict[str, Any], explicit: str | None) -> Path | None:
     if explicit:
-        return _resolve_relative(_infer_neopax_root(config_path), explicit)
+        # CLI override: standard path semantics (absolute or relative to CWD),
+        # not relative to the NEOPAX root.
+        expanded = os.path.expandvars(os.path.expanduser(explicit))
+        return Path(expanded).resolve()
     geometry_cfg = cfg.get("geometry", {})
     return _resolve_relative(_infer_neopax_root(config_path), geometry_cfg.get("vmec_file"))
 
