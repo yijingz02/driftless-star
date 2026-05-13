@@ -234,11 +234,11 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## Container Specification (Phase 2)
 
-**`sfincs_jax`:** Built from the single templated `Dockerfile` using build arguments:
+**`sfincs_jax`:** Built from the single templated `stages/Dockerfile` using build arguments:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-3-sfincs .        # CPU
-docker build --build-arg ENVIRONMENT=stage-3-sfincs-gpu --build-arg CUDA_VERSION=12 .  # GPU
+docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-3-sfincs stages/        # CPU
+docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-3-sfincs-gpu --build-arg CUDA_VERSION=12 stages/  # GPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-3-sfincs-cpu` and `stage-3-sfincs-gpu`. CI builds via `.github/workflows/containers.yml`.

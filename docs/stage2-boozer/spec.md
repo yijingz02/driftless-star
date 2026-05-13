@@ -184,19 +184,19 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## Container Specification (Phase 2)
 
-**`booz_xform` (legacy Fortran/Python):** Built from the single templated `Dockerfile` using build arguments:
+**`booz_xform` (legacy Fortran/Python):** Built from the single templated `stages/Dockerfile` using build arguments:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-2-booz .  # CPU
+docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-2-booz stages/  # CPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-2-booz-cpu`.
 
-**`booz_xform_jax`:** Built from the single templated `Dockerfile` using build arguments:
+**`booz_xform_jax`:** Built from the single templated `stages/Dockerfile` using build arguments:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-2-booz-jax .                                            # CPU
-docker build --build-arg ENVIRONMENT=stage-2-booz-jax-gpu --build-arg CUDA_VERSION=12 .  # GPU
+docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-2-booz-jax stages/                                            # CPU
+docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-2-booz-jax-gpu --build-arg CUDA_VERSION=12 stages/  # GPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-2-booz-jax-cpu` and `stage-2-booz-jax-gpu`. CI builds via `.github/workflows/containers.yml`.

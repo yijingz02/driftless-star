@@ -1,0 +1,91 @@
+[workspace]
+channels = ["conda-forge"]
+name = "stellaforge-stages"
+platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
+version = "0.1.0"
+
+[tasks.start]
+depends-on = [ "stage-1-vmec", "stage-2-booz", "stage-3-sfincs"]
+
+[dependencies]
+
+[feature.vmec-jax.dependencies]
+vmec-jax = ">=0.0.4,<0.0.5"
+
+[feature.vmec-jax.tasks.stage-1-vmec]
+cmd = "vmec_jax stage1-equilibrium/input/input.HSX_vacuum_ns201_quickrun --outdir stage1-equilibrium/output"
+
+[feature.desc.dependencies]
+desc-opt = ">=0.17.1,<0.18"
+
+[feature.booz-xform.dependencies]
+booz_xform = ">=0.0.9,<0.0.10"
+
+[feature.booz-xform.tasks.stage-2-booz]
+cmd = 'python -c "import booz_xform; print(booz_xform.__version__)"'
+
+[feature.booz-xform-jax.dependencies]
+booz-xform-jax = ">=0.1.0,<0.2"
+
+[feature.booz-xform-jax.tasks.stage-2-booz]
+cmd = "python stage2-boozer/run_boozer.py --wout stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc --output stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc"
+
+[feature.sfincs.dependencies]
+sfincs-mpich = ">=3.0.0,<4"
+
+[feature.sfincs.tasks.stage-3-sfincs-fortran]
+cmd = """mkdir -p stage3-neoclassical/output && \
+cp stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun stage3-neoclassical/output/input.namelist && \
+cd stage3-neoclassical/output && \
+sfincs"""
+
+[feature.sfincs-jax.dependencies]
+sfincs-jax = ">=1.1.0,<2"
+
+[feature.sfincs-jax.tasks.stage-3-sfincs]
+cmd = "sfincs_jax stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun --out stage3-neoclassical/output/sfincsOutput_quickrun.h5 --wout-path stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc"
+
+[feature.spectrax-gk.dependencies]
+spectraxgk = ">=1.5.0,<2"
+booz-xform-jax = ">=0.1.0,<0.2"
+
+[feature.spectrax-gk.tasks.stage-4-spectrax]
+cmd = "spectrax-gk run --config ./stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml --out stage4-turbulence/output/hsx_run_quickrun"
+
+[feature.neopax.dependencies]
+scipy = ">=1.17.1,<2"
+jax = ">=0.9.1,<0.10"
+equinox = ">=0.13.6,<0.14"
+optimistix = ">=0.1.0,<0.2"
+lineax = ">=0.1.0,<0.2"
+diffrax = ">=0.7.2,<0.8"
+interpax = ">=0.3.13,<0.4"
+matplotlib = ">=3.10.8,<4"
+h5py = ">=3.16.0,<4"
+netcdf4 = ">=1.7.4,<2"
+
+[feature.neopax.pypi-dependencies]
+orthax = ">=0.2.8, <0.3"
+inductiva = ">=0.18.12, <0.19"
+neopax = { git = "https://github.com/uwplasma/NEOPAX.git", rev = "5ec4cc3c5583121c5c454358defa7ab1af40c211" }
+
+[feature.cuda]
+platforms = ["linux-64"]
+[feature.cuda.system-requirements]
+cuda = "12"
+
+[environments]
+stage-1-vmec = {features = ["vmec-jax"], no-default-feature = true }
+stage-1-vmec-gpu = {features = ["vmec-jax", "cuda"], no-default-feature = true }
+stage-1-desc = {features = ["desc"], no-default-feature = true }
+stage-1-desc-gpu = {features = ["desc", "cuda"], no-default-feature = true }
+stage-2-booz = {features = ["booz-xform"], no-default-feature = true }
+stage-2-booz-jax = {features = ["booz-xform-jax"], no-default-feature = true }
+stage-2-booz-jax-gpu = {features = ["booz-xform-jax", "cuda"], no-default-feature = true }
+stage-3-sfincs-fortran = {features = ["sfincs"], no-default-feature = true}
+stage-3-sfincs = {features = ["sfincs-jax"], no-default-feature = true}
+stage-3-sfincs-gpu = {features = ["sfincs-jax", "cuda"], no-default-feature = true }
+stage-4-spectrax = {features = ["spectrax-gk"], no-default-feature = true}
+stage-4-spectrax-gpu = {features = ["spectrax-gk", "cuda"], no-default-feature = true }
+stage-5-neopax = {features = ["neopax"], no-default-feature = true}
+stage-5-neopax-gpu = {features = ["neopax", "cuda"], no-default-feature = true }

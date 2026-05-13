@@ -4,20 +4,20 @@
 
 ### Building Docker container images
 
-From the repo root
+The Dockerfile lives in `stages/`, which is also the build context. From the repo root:
 
 ```
-docker build --file Dockerfile --build-arg <build-args> --tag <tag> <context path>
+docker build --file stages/Dockerfile --build-arg <build-args> --tag <tag> stages/
 ```
 
 Example:
 
 ```
 docker build \
-    --file Dockerfile \
+    --file stages/Dockerfile \
     --build-arg ENVIRONMENT="stage-1-vmec" \
     --tag ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu \
-    .
+    stages/
 ```
 
 ### Pulling Docker container images from a registry
@@ -86,15 +86,17 @@ pixi global install apptainer
 
 ### Building Apptainer container images
 
-Apptainer has no concept of "context" and so requires you to operate from a the directory of the Apptainer definition file expects to be executed from.
+Apptainer has no concept of "context" and so requires you to operate from the directory the Apptainer definition file expects to be executed from. For StellaForge, that directory is `stages/`.
 
 ```
+cd stages
 apptainer build [local options...] <IMAGE PATH> <BUILD SPEC>
 ```
 
 Example:
 
 ```
+cd stages
 apptainer build \
     --build-arg ENVIRONMENT="stage-1-vmec" \
     stage-1-vmec.sif \
@@ -131,16 +133,16 @@ Examples:
 
 ```console
 $ apptainer run --containall --writable-tmpfs ./stage-1-vmec-cpu.sif
-(mvp:stage-1-vmec)
+(stellaforge-stages:stage-1-vmec)
 ```
 
 * Run a `stage-1-vmec-cpu` container in an interactive shell with the local working directory mounted
 
 ```console
 $ apptainer run --containall --writable-tmpfs --bind "$PWD":/work --pwd /work ./stage-1-vmec-cpu.sif
-(mvp:stage-1-vmec) pwd
+(stellaforge-stages:stage-1-vmec) pwd
 /work
-(mvp:stage-1-vmec)
+(stellaforge-stages:stage-1-vmec)
 ```
 
 * Execute a command in a `stage-1-vmec-cpu` container
@@ -154,7 +156,7 @@ $ apptainer run --containall --writable-tmpfs ./stage-1-vmec-cpu.sif python -c '
 
 ```console
 $ apptainer run --containall --writable-tmpfs --nv ./stage-1-vmec-gpu.sif
-(mvp:stage-1-vmec-gpu) nvidia-smi --version
+(stellaforge-stages:stage-1-vmec-gpu) nvidia-smi --version
 NVIDIA-SMI version  : 590.48.01
 NVML version        : 590.48
 DRIVER version      : 590.48.01

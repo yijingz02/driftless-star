@@ -51,6 +51,8 @@ Each stage's `input/` directory ships with a `_quickrun` smoke-test variant so a
 
 **Note:** All paths are relative to the repository root.
 
+**Note:** The per-stage Pixi environments live in `stages/pixi.toml` (a separate workspace from the root `pipeline` env). The stage-level commands below include `--manifest-path stages/pixi.toml` so they run from the repo root unchanged; alternatively, `cd stages` first and drop the flag.
+
 ## Stage 1 -- Equilibrium
 
 **Code:** vmec_jax
@@ -69,13 +71,13 @@ Each stage's `input/` directory ships with a `_quickrun` smoke-test variant so a
 From the repo root
 
 ```
-pixi install --environment stage-1-vmec
+pixi install --manifest-path stages/pixi.toml --environment stage-1-vmec
 ```
 
 ### How to Run
 
 ```
-pixi run stage-1-vmec
+pixi run --manifest-path stages/pixi.toml stage-1-vmec
 ```
 
 ---
@@ -90,18 +92,18 @@ pixi run stage-1-vmec
 | **Out**   | NetCDF `boozmn_*.nc` | `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc` |
 
 > [!NOTE]
-> Stage 2's JAX driver takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec` first.
+> Stage 2's JAX driver takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run --manifest-path stages/pixi.toml stage-1-vmec` first.
 
 ### How to Install
 
 ```
-pixi install --environment stage-2-booz-jax
+pixi install --manifest-path stages/pixi.toml --environment stage-2-booz-jax
 ```
 
 ### How to Run
 
 ```
-pixi run -e stage-2-booz-jax stage-2-booz
+pixi run --manifest-path stages/pixi.toml -e stage-2-booz-jax stage-2-booz
 ```
 
 which is morally similar to
@@ -137,17 +139,17 @@ python stages/stage2-boozer/run_boozer.py \
 #### How to Install
 
 ```
-pixi install --environment stage-3-sfincs
+pixi install --manifest-path stages/pixi.toml --environment stage-3-sfincs
 ```
 
 #### How to Run
 
 ```
-pixi run stage-3-sfincs
+pixi run --manifest-path stages/pixi.toml stage-3-sfincs
 ```
 
 > [!NOTE]
-> The pixi `stage-3-sfincs` task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`, overriding the namelist `equilibriumFile` field. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec` first. The `sfincs_fortran` backend has no CLI override and still reads `equilibriumFile` from the namelist.
+> The pixi `stage-3-sfincs` task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`, overriding the namelist `equilibriumFile` field. Populate `stage1-equilibrium/output/` by running `pixi run --manifest-path stages/pixi.toml stage-1-vmec` first. The `sfincs_fortran` backend has no CLI override and still reads `equilibriumFile` from the namelist.
 
 
 **Code:** SFINCS (Fortran)
@@ -161,13 +163,13 @@ pixi run stage-3-sfincs
 #### How to Install
 
 ```
-pixi install --environment stage-3-sfincs-fortran
+pixi install --manifest-path stages/pixi.toml --environment stage-3-sfincs-fortran
 ```
 
 #### How to Run
 
 ```
-pixi run stage-3-sfincs-fortran
+pixi run --manifest-path stages/pixi.toml stage-3-sfincs-fortran
 ```
 
 > [!NOTE]
@@ -191,18 +193,18 @@ pixi run stage-3-sfincs-fortran
 | **Out**   | `csv`              | `stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv`        |
 
 > [!NOTE]
-> The TOML's `vmec_file` points into `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec` first.
+> The TOML's `vmec_file` points into `stage1-equilibrium/output/`. Populate this directory by running `pixi run --manifest-path stages/pixi.toml stage-1-vmec` first.
 
 ### How to Install
 
 ```
-pixi install --environment stage-4-spectrax
+pixi install --manifest-path stages/pixi.toml --environment stage-4-spectrax
 ```
 
 ### How to Run
 
 ```
-pixi run stage-4-spectrax
+pixi run --manifest-path stages/pixi.toml stage-4-spectrax
 ```
 
 which executes something morally equivalent to
@@ -228,7 +230,7 @@ spectrax-gk run --config runtime_hsx_nonlinear_vmec_geometry.toml --out output/h
 ### How to Install
 
 ```
-pixi install --environment stage-5-neopax
+pixi install --manifest-path stages/pixi.toml --environment stage-5-neopax
 ```
 
 ### How to Run
@@ -279,7 +281,7 @@ pixi run -e pipeline dot -c
 > `dot -c` is a one-time step required because Pixi deliberately skips package post-link scripts by default ([security rationale](https://pixi.sh/latest/reference/pixi_configuration/#run-post-link-scripts)). Graphviz's own post-link script normally calls `dot -c` to register its renderer plugins ([graphviz(1)](https://manpages.debian.org/bookworm/graphviz/dot.1.en.html) — `"-c  configure plugins"`).
 
 > [!NOTE]
-> `pipeline` pulls Snakemake from the **bioconda** channel (declared on the feature, not the workspace), not conda-forge where every other stage env lives.
+> `pipeline` pulls Snakemake from the **bioconda** channel (declared on the feature in the root `pixi.toml`, not the workspace). Every stage env in `stages/pixi.toml` lives on conda-forge only.
 
 ### How to Run
 

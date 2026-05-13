@@ -40,6 +40,7 @@ runs:
 
     - name: Build Apptainer container image
       shell: bash
+      working-directory: stages
       run: |
         apptainer build \
           --build-arg CUDA_VERSION="${{ inputs.cuda-version }}" \
@@ -58,6 +59,7 @@ runs:
     - name: Push container image to container registry
       if: inputs.push == 'true'
       shell: bash
+      working-directory: stages
       run: |
         short_sha="${GITHUB_SHA::7}"
         registry="oras://${{ inputs.registry }}/${{ steps.repo.outputs.name }}"

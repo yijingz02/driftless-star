@@ -214,11 +214,11 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## Container Specification (Phase 2)
 
-**`SPECTRAX-GK`:** Built from the single templated `Dockerfile` using build arguments:
+**`SPECTRAX-GK`:** Built from the single templated `stages/Dockerfile` using build arguments:
 
 ```
-docker build --build-arg ENVIRONMENT=stage-4-spectrax .        # CPU
-docker build --build-arg ENVIRONMENT=stage-4-spectrax-gpu --build-arg CUDA_VERSION=12 .  # GPU
+docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-4-spectrax stages/        # CPU
+docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-4-spectrax-gpu --build-arg CUDA_VERSION=12 stages/  # GPU
 ```
 
 Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-4-spectrax-cpu` and `stage-4-spectrax-gpu`. CI builds via `.github/workflows/containers.yml`.
