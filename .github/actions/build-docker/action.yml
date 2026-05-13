@@ -62,8 +62,8 @@ runs:
     - name: Build and push
       uses: docker/build-push-action@v7
       with:
-        context: .
-        file: Dockerfile
+        context: stages
+        file: stages/Dockerfile
         platforms: ${{ inputs.platforms }}
         build-args: |
           CUDA_VERSION=${{ inputs.cuda-version }}

@@ -10,7 +10,6 @@ Stage: build
 %files
 ./pixi.toml /app/
 ./pixi.lock /app/
-./.gitignore /app/
 
 %post
 #!/usr/bin/env bash
@@ -41,7 +40,6 @@ Stage: final
 /app/.pixi/envs/{{ ENVIRONMENT }} /app/.pixi/envs/{{ ENVIRONMENT }}
 /app/pixi.toml /app/pixi.toml
 /app/pixi.lock /app/pixi.lock
-/app/.gitignore /app/.gitignore
 # The ignore files are needed for 'pixi run' to work in the container
 /app/.pixi/.gitignore /app/.pixi/.gitignore
 /app/.pixi/.condapackageignore /app/.pixi/.condapackageignore
