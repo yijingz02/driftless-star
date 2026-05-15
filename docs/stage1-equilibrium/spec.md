@@ -32,13 +32,13 @@ Reference: `stellarator_workflow/stellarator_workflow.tex`, Section 4.1 (`VMEC++
 
 ### Installation & Platform
 
-**`vmec_jax`:** Install via the Pixi environment. From the repo root:
+**`vmec_jax`:** Install via the Pixi environment. From the `stages`/ directory:
 
 ```
 pixi install --environment stage-1-vmec
 ```
 
-**`desc-opt`:** Install via the Pixi environment. From the repo root:
+**`desc-opt`:** Install via the Pixi environment. From the `stages`/ directory:
 
 ```
 pixi install --environment stage-1-desc
@@ -215,7 +215,7 @@ Reference: `stellarator_workflow.tex`, Sections 4.1-4.2.
 
 ## Scripts & Workflows
 
-**`vmec_jax` (via Pixi):** From the repo root:
+**`vmec_jax` (via Pixi):** From the `stages`/ directory:
 
 ```
 pixi run stage-1-vmec

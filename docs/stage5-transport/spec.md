@@ -51,7 +51,7 @@ Reference: `stellarator_workflow.tex`, Sections 4.8--4.9;
 
 ### Installation & Platform
 
-**`NEOPAX`:** Install via the Pixi environment. From the repo root:
+**`NEOPAX`:** Install via the Pixi environment. From the `stages`/ directory:
 
 ```
 pixi install --environment stage-5-neopax

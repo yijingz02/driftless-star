@@ -156,13 +156,13 @@ When Phi1 is included, coupled to quasineutrality.
 
 ## Installation & Platform
 
-**`sfincs`:** Install via the Pixi environment. From the repo root:
+**`sfincs`:** Install via the Pixi environment. From the `stages`/ directory:
 
 ```
 pixi install --environment stage-3-sfincs-fortran
 ```
 
-**`sfincs_jax`:** Install via the Pixi environment. From the repo root:
+**`sfincs_jax`:** Install via the Pixi environment. From the `stages`/ directory:
 
 ```
 pixi install --environment stage-3-sfincs
@@ -191,7 +191,7 @@ See `docs/mvp-pipeline.md` for run commands and I/O details.
 
 ## Scripts & Workflows
 
-**`sfincs_jax` (via Pixi):** From the repo root:
+**`sfincs_jax` (via Pixi):** From the `stages`/ directory:
 
 ```
 pixi run stage-3-sfincs
@@ -205,7 +205,7 @@ pixi run stage-3-sfincs
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
-**`SFINCS` (Fortran, via Pixi):** From the repo root:
+**`SFINCS` (Fortran, via Pixi):** From the `stages`/ directory:
 
 ```
 pixi run stage-3-sfincs-fortran
