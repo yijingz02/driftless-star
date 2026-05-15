@@ -168,6 +168,12 @@ pixi install --environment stage-3-sfincs-fortran
 pixi install --environment stage-3-sfincs
 ```
 
+**`neo-jax`:** Install via the Pixi environment. From the `stages`/ directory:
+
+```
+pixi install --environment stage-3-neo-jax
+```
+
 See `docs/mvp-pipeline.md` for run commands and I/O details.
 
 > [!TODO]
