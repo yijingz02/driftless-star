@@ -91,7 +91,7 @@ Containerize stages and write tests. Full checklist in the [Guide](docs/guide.md
   - [x] `booz_xform_jax`
   - [x] `BOOZ_XFORM`
 - [ ] Stage 3 -- Neoclassical
-  - [ ] `NEO_JAX`
+  - [x] `NEO_JAX`
   - [x] `sfincs_jax`
   - [ ] `NEO`
   - [x] `SFINCS`

@@ -58,6 +58,8 @@ jobs:
             {"environment": "stage-3-sfincs-fortran", "image-tag": "stage-3-sfincs-fortran-cpu", "platforms": "linux/amd64,linux/arm64"},
             {"environment": "stage-3-sfincs", "image-tag": "stage-3-sfincs-cpu", "platforms": "linux/amd64,linux/arm64"},
             {"environment": "stage-3-sfincs-gpu", "cuda-version": "12", "image-tag": "stage-3-sfincs-gpu", "platforms": "linux/amd64"},
+            {"environment": "stage-3-neo-jax", "image-tag": "stage-3-neo-jax-cpu", "platforms": "linux/amd64,linux/arm64"},
+            {"environment": "stage-3-neo-jax-gpu", "cuda-version": "12", "image-tag": "stage-3-neo-jax-gpu", "platforms": "linux/amd64"},
             {"environment": "stage-4-spectrax", "image-tag": "stage-4-spectrax-cpu", "platforms": "linux/amd64,linux/arm64"},
             {"environment": "stage-4-spectrax-gpu", "cuda-version": "12", "image-tag": "stage-4-spectrax-gpu", "platforms": "linux/amd64"},
             {"environment": "stage-5-neopax", "image-tag": "stage-5-neopax-cpu", "platforms": "linux/amd64,linux/arm64"},
