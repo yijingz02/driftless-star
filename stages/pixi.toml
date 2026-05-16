@@ -56,6 +56,9 @@ h5py = ">=3.16.0,<4"
 [feature.spectrax-gk.tasks.stage-4-spectrax]
 cmd = "spectrax-gk run --config ./stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml --out stage4-turbulence/output/hsx_run_quickrun"
 
+[feature.spectrax-gk.tasks.stage-4-spectrax-radial-scan]
+cmd = "python stage4-turbulence/spectrax_gk_radial_scan.py"
+
 [feature.neopax.dependencies]
 scipy = ">=1.17.1,<2"
 jax = ">=0.9.1,<0.10"

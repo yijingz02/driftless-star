@@ -19,7 +19,7 @@ neoclassical_file = "../../stage3-neoclassical/output/HSX_vacuum_ns201_nx4_quick
 
 [turbulence]
 flux_model = "fluxes_r_file"
-turbulence_file = "stage4-turbulence/expected_output/spectrax_test_hsx_TEST_SMALL_t500/neopax_fluxes.h5"
+turbulence_file = "../../stage4-turbulence/output/spectrax_HSX_quickrun/neopax_fluxes.h5"
 
 
 [ambipolarity]

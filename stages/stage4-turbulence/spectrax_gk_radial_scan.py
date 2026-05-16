@@ -28,6 +28,16 @@ except ModuleNotFoundError:  # pragma: no cover
     import neopax_spectrax_flux_bridge as bridge  # type: ignore[no-redef]
 
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+STAGES_DIR = SCRIPT_DIR.parent
+
+DEFAULT_NEOPAX_CONFIG = (
+    STAGES_DIR / "stage5-transport" / "input" / "Solve_Transport_equations_noHe_radau_HSX_quickrun.toml"
+)
+DEFAULT_SPECTRAX_TEMPLATE = SCRIPT_DIR / "input" / "runtime_hsx_nonlinear_vmec_geometry_quickrun.toml"
+DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "output" / "spectrax_HSX_quickrun"
+
+
 def _load_toml(path: Path) -> dict:
     with path.open("rb") as fh:
         return tomllib.load(fh)
@@ -193,16 +203,24 @@ def cmd_all(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--neopax-config", required=True, help="NEOPAX transport TOML")
+    p.add_argument(
+        "--neopax-config",
+        default=str(DEFAULT_NEOPAX_CONFIG),
+        help="NEOPAX transport TOML",
+    )
     p.add_argument("--neopax-result", default=None, help="Optional explicit path to transport_solution.h5")
     p.add_argument(
         "--output-dir",
-        default=str(Path(__file__).resolve().parent / "spectrax_flux_scan"),
+        default=str(DEFAULT_OUTPUT_DIR),
         help="Directory for manifest, SPECTRAX outputs, and collected fluxes",
     )
     p.add_argument("--spectrax-root", default=str(bridge.DEFAULT_SPECTRAX_ROOT))
-    p.add_argument("--spectrax-template", default=None, help="Base SPECTRAX runtime TOML used as the model template")
-    p.add_argument("--profiles-source", choices=("transport_h5", "analytical"), default="transport_h5")
+    p.add_argument(
+        "--spectrax-template",
+        default=str(DEFAULT_SPECTRAX_TEMPLATE),
+        help="Base SPECTRAX runtime TOML used as the model template",
+    )
+    p.add_argument("--profiles-source", choices=("transport_h5", "analytical"), default="analytical")
     p.add_argument("--time-index", type=int, default=-1)
     p.add_argument("--analytical-n-radii", type=int, default=None, help="Number of analytical rho points; defaults to [geometry].n_radial from the NEOPAX config")
     p.add_argument("--electron-model", choices=("adiabatic", "kinetic"), default=None)
@@ -222,23 +240,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--tau-e-override", type=float, default=None)
     p.add_argument("--nu-ion", type=float, default=0.01)
     p.add_argument("--nu-electron", type=float, default=0.0)
-    p.add_argument("--nx", type=int, default=None, help="Nonlinear spectral resolution in kx / x")
-    p.add_argument("--ny", type=int, default=None, help="Nonlinear spectral resolution in ky / y")
+    p.add_argument("--nx", type=int, default=12, help="Nonlinear spectral resolution in kx / x")
+    p.add_argument("--ny", type=int, default=12, help="Nonlinear spectral resolution in ky / y")
     p.add_argument("--nz", type=int, default=None, help="Parallel/grid resolution in z")
     p.add_argument("--lx", type=float, default=None)
     p.add_argument("--ly", type=float, default=None)
     p.add_argument("--boundary", default=None)
     p.add_argument("--y0", type=float, default=None)
-    p.add_argument("--ntheta", type=int, default=None, help="Number of theta points for generated VMEC geometry")
+    p.add_argument("--ntheta", type=int, default=30, help="Number of theta points for generated VMEC geometry")
     p.add_argument("--nperiod", type=int, default=None)
-    p.add_argument("--t-max", type=float, default=None)
+    p.add_argument("--t-max", type=float, default=10.0)
     p.add_argument("--t-final", dest="t_max", type=float, help="Alias for --t-max")
     p.add_argument("--dt", type=float, default=None)
     p.add_argument("--method", default=None)
     p.add_argument("--use-diffrax", action=argparse.BooleanOptionalAction, default=None)
     p.add_argument("--fixed-dt", action=argparse.BooleanOptionalAction, default=None)
-    p.add_argument("--sample-stride", type=int, default=None)
-    p.add_argument("--diagnostics-stride", type=int, default=None)
+    p.add_argument("--sample-stride", type=int, default=50)
+    p.add_argument("--diagnostics-stride", type=int, default=1)
     p.add_argument("--chunk-steps", type=int, default=None, help="Adaptive nonlinear chunk size in steps for each SPECTRAX run")
     p.add_argument("--cfl", type=float, default=None)
     p.add_argument("--state-sharding", default=None)
@@ -263,15 +281,41 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--normalization-contract", default=None)
     p.add_argument("--diagnostic-norm", default=None)
     p.add_argument("--rho-star-physical", type=float, default=None, help="Optional manual rho_star override; otherwise derive it per radius from VMEC geometry and the reference-ion profile")
-    p.add_argument("--average-window", type=float, default=20.0, help="Average turbulent fluxes over the final time window")
-    p.add_argument("--plot", action="store_true", help="Write PNG plots of Gamma and Q versus rho.")
-    p.add_argument("--plot-run-heat-traces", action="store_true", help="Write per-run heat-flux time-trace PNGs from existing diagnostics CSV files.")
-    p.add_argument("--backend", choices=("cpu", "gpu"), default="gpu")
+    p.add_argument("--average-window", type=float, default=1.0, help="Average turbulent fluxes over the final time window")
+    p.add_argument("--plot", dest="plot", action="store_true", help="Write PNG plots of Gamma and Q versus rho.")
+    p.add_argument("--no-plot", dest="plot", action="store_false", help="Skip PNG plots.")
+    p.set_defaults(plot=True)
+    p.add_argument(
+        "--plot-run-heat-traces",
+        dest="plot_run_heat_traces",
+        action="store_true",
+        help="Write per-run heat-flux time-trace PNGs from existing diagnostics CSV files.",
+    )
+    p.add_argument(
+        "--no-plot-run-heat-traces",
+        dest="plot_run_heat_traces",
+        action="store_false",
+        help="Skip per-run heat-flux time-trace PNGs.",
+    )
+    p.set_defaults(plot_run_heat_traces=True)
+    p.add_argument("--backend", choices=("cpu", "gpu"), default="cpu")
     p.add_argument("--gpu-ids", default="0")
     p.add_argument("--max-parallel", type=int, default=1)
     p.add_argument("--threads-per-run", type=int, default=1)
     p.add_argument("--poll-interval", type=float, default=2.0)
-    p.add_argument("--verbose-workers", action="store_true", help="Show the stdout/stderr from each SPECTRAX worker run")
+    p.add_argument(
+        "--verbose-workers",
+        dest="verbose_workers",
+        action="store_true",
+        help="Show the stdout/stderr from each SPECTRAX worker run",
+    )
+    p.add_argument(
+        "--no-verbose-workers",
+        dest="verbose_workers",
+        action="store_false",
+        help="Silence SPECTRAX worker stdout/stderr.",
+    )
+    p.set_defaults(verbose_workers=True)
     p.add_argument(
         "--collect-even-if-failures",
         action=argparse.BooleanOptionalAction,

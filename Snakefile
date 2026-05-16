@@ -80,6 +80,119 @@ def _stage3_radial_scan_cmd() -> str:
     parts.append("--verbose-workers" if s.get("verbose_workers") else "--no-verbose-workers")
     return " ".join(parts)
 
+# Stage 4 spectrax-gk radial-scan config + derived paths.
+STAGE4_CFG  = config["stage4"]["spectrax_gk"]
+S4_TEMPLATE = STAGE4_CFG["spectrax_template"] or "stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml"
+S4_WOUT     = STAGE4_CFG["vmec_file_override"]   or f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc"
+S4_BOOZER   = STAGE4_CFG["boozer_file_override"] or f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc"
+S4_OUTDIR   = f"stages/stage4-turbulence/output/{STAGE4_CFG['output_subdir']}"
+S4_OUTPUT   = f"{S4_OUTDIR}/neopax_fluxes.h5"
+
+
+# Optional value-bearing args: only passed when the config value is non-null,
+# so the script's own defaults govern anything the user leaves alone.
+_STAGE4_OPTIONAL_FLAGS = {
+    "profiles_source":         "--profiles-source",
+    "neopax_result":           "--neopax-result",
+    "analytical_n_radii":      "--analytical-n-radii",
+    "time_index":              "--time-index",
+    "electron_model":          "--electron-model",
+    "reference_ion":           "--reference-ion",
+    "rho_indices":             "--rho-indices",
+    "rho_min":                 "--rho-min",
+    "rho_max":                 "--rho-max",
+    "num_radii":               "--num-radii",
+    "density_floor":           "--density-floor",
+    "temperature_floor":       "--temperature-floor",
+    "gradient_coordinate":     "--gradient-coordinate",
+    "gradient_scale":          "--gradient-scale",
+    "tprim_scale":             "--tprim-scale",
+    "fprim_scale":             "--fprim-scale",
+    "tau_e_override":          "--tau-e-override",
+    "nu_ion":                  "--nu-ion",
+    "nu_electron":             "--nu-electron",
+    "rho_star_physical":       "--rho-star-physical",
+    "nx":                      "--nx",
+    "ny":                      "--ny",
+    "nz":                      "--nz",
+    "lx":                      "--lx",
+    "ly":                      "--ly",
+    "boundary":                "--boundary",
+    "y0":                      "--y0",
+    "ntheta":                  "--ntheta",
+    "nperiod":                 "--nperiod",
+    "t_max":                   "--t-max",
+    "dt":                      "--dt",
+    "method":                  "--method",
+    "sample_stride":           "--sample-stride",
+    "diagnostics_stride":      "--diagnostics-stride",
+    "chunk_steps":             "--chunk-steps",
+    "cfl":                     "--cfl",
+    "state_sharding":          "--state-sharding",
+    "ky":                      "--ky",
+    "nl":                      "--nl",
+    "nm":                      "--nm",
+    "init_field":              "--init-field",
+    "init_amp":                "--init-amp",
+    "alpha":                   "--alpha",
+    "npol":                    "--npol",
+    "beta":                    "--beta",
+    "nu_hermite":              "--nu-hermite",
+    "nu_laguerre":             "--nu-laguerre",
+    "nu_hyper":                "--nu-hyper",
+    "p_hyper":                 "--p-hyper",
+    "hypercollisions_const":   "--hypercollisions-const",
+    "hypercollisions_kz":      "--hypercollisions-kz",
+    "d_hyper":                 "--d-hyper",
+    "damp_ends_amp":           "--damp-ends-amp",
+    "damp_ends_widthfrac":     "--damp-ends-widthfrac",
+    "hyperdiffusion":          "--hyperdiffusion",
+    "normalization_contract":  "--normalization-contract",
+    "diagnostic_norm":         "--diagnostic-norm",
+    "average_window":          "--average-window",
+    "gpu_ids":                 "--gpu-ids",
+    "max_parallel":            "--max-parallel",
+    "threads_per_run":         "--threads-per-run",
+    "poll_interval":           "--poll-interval",
+}
+
+# Tri-state booleans: null = use script default, true/false = explicit override.
+_STAGE4_BOOL_FLAGS = [
+    ("use_diffrax",              "--use-diffrax",              "--no-use-diffrax"),
+    ("fixed_dt",                 "--fixed-dt",                 "--no-fixed-dt"),
+    ("plot",                     "--plot",                     "--no-plot"),
+    ("plot_run_heat_traces",     "--plot-run-heat-traces",     "--no-plot-run-heat-traces"),
+    ("verbose_workers",          "--verbose-workers",          "--no-verbose-workers"),
+    ("collect_even_if_failures", "--collect-even-if-failures", "--no-collect-even-if-failures"),
+]
+
+
+def _stage4_radial_scan_cmd() -> str:
+    """Compose the Stage 4 spectrax-gk radial-scan shell command from config."""
+    s = STAGE4_CFG
+    parts = [
+        f"{DOCKER_PREFIX} {STAGE4_IMG}",
+        "python stages/stage4-turbulence/spectrax_gk_radial_scan.py",
+        "--neopax-config {input.neopax_toml}",
+        "--spectrax-template {input.template}",
+        "--vmec-file-override {input.wout}",
+        "--boozer-file-override {input.boozer}",
+        f"--output-dir {S4_OUTDIR}",
+        f"--backend {DEVICE}",
+    ]
+    for key, flag in _STAGE4_OPTIONAL_FLAGS.items():
+        v = s.get(key)
+        if v is not None:
+            parts.append(f"{flag} {v}")
+    for key, on, off in _STAGE4_BOOL_FLAGS:
+        v = s.get(key)
+        if v is True:
+            parts.append(on)
+        elif v is False:
+            parts.append(off)
+    return " ".join(parts)
+
+
 # Terminal artifacts of the MVP forward pass. When Stage 5 (NEOPAX) lands,
 # this list collapses to the single (or multiple) final Stage 5 output(s); Stages 2-4 outputs
 # become transitive intermediates and drop out of `rule all`.
@@ -87,8 +200,7 @@ rule all:
     input:
         f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
         S3_OUTPUT,
-        "stages/stage4-turbulence/output/hsx_run_quickrun.summary.json",
-        "stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv",
+        S4_OUTPUT,
 
 rule stage1_vmec:
     input:  f"stages/stage1-equilibrium/input/input.{RUN_NAME}"
@@ -114,21 +226,16 @@ rule stage3_sfincs:
     shell:
         _stage3_radial_scan_cmd()
 
-# eik_cache is geometry derived from wout; delete it before each rerun so
-# spectrax-gk regenerates from the current wout rather than reusing stale cache.
 rule stage4_spectrax:
     input:
-        toml = "stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml",
-        wout = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
+        template    = S4_TEMPLATE,
+        wout        = S4_WOUT,
+        boozer      = S4_BOOZER,
+        neopax_toml = STAGE4_CFG["neopax_config"],
     output:
-        summary     = "stages/stage4-turbulence/output/hsx_run_quickrun.summary.json",
-        diagnostics = "stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv",
-        eik_cache   = f"stages/stage4-turbulence/output/wout_{RUN_NAME}.eik.nc",
+        S4_OUTPUT,
     shell:
-        "rm -f {output.eik_cache} && "
-        f"{DOCKER_PREFIX} {STAGE4_IMG} "
-        "spectrax-gk run --config {input.toml} "
-        "--out stages/stage4-turbulence/output/hsx_run_quickrun"
+        _stage4_radial_scan_cmd()
 
 rule clean:
     shell:
