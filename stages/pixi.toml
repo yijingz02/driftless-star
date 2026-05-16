@@ -51,6 +51,7 @@ cmd = "python stage3-neoclassical/sfincs_jax_radial_scan.py"
 [feature.spectrax-gk.dependencies]
 spectraxgk = ">=1.5.0,<2"
 booz-xform-jax = ">=0.1.0,<0.2"
+h5py = ">=3.16.0,<4"
 
 [feature.spectrax-gk.tasks.stage-4-spectrax]
 cmd = "spectrax-gk run --config ./stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml --out stage4-turbulence/output/hsx_run_quickrun"
