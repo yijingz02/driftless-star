@@ -232,6 +232,20 @@ def _resolve_relative(base: Path, value: str | None) -> str | None:
     return str((base / path).resolve())
 
 
+def _resolve_cli_path(value: str | None) -> str | None:
+    """Resolve a CLI path argument.
+
+    CLI overrides use standard path semantics (absolute or relative to CWD),
+    not relative to the NEOPAX config's directory.
+    """
+    if not value:
+        return None
+    expanded = os.path.expandvars(os.path.expanduser(value))
+    if re.match(r"^[A-Za-z]:[\\/]", expanded):
+        return expanded
+    return str(Path(expanded).resolve())
+
+
 def _infer_neopax_root(config_path: Path) -> Path:
     parent = config_path.resolve().parent
     if parent.parent.name == "examples":
@@ -599,7 +613,7 @@ def _build_manifest(
 
     neopax_root = _infer_neopax_root(neopax_config)
 
-    vmec_path = _resolve_relative(neopax_root, args.vmec_file_override)
+    vmec_path = _resolve_cli_path(args.vmec_file_override)
     if vmec_path is None:
         cfg = _load_toml(neopax_config)
         geometry_cfg = cfg.get("geometry", {})
@@ -607,7 +621,7 @@ def _build_manifest(
     if vmec_path is None:
         raise ValueError("Could not resolve a VMEC file path from the NEOPAX config")
 
-    booz_path = _resolve_relative(neopax_root, args.boozer_file_override)
+    booz_path = _resolve_cli_path(args.boozer_file_override)
     if booz_path is None:
         cfg = _load_toml(neopax_config)
         geometry_cfg = cfg.get("geometry", {})
