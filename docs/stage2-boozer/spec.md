@@ -26,13 +26,13 @@ Transforms a VMEC-style equilibrium into Boozer coordinates. Boozer coordinates 
 
 ### Installation & Platform
 
-**`booz_xform` (legacy Fortran/Python):** Install via the Pixi environment. From the repo root:
+**`booz_xform` (legacy Fortran/Python):** Install via the Pixi environment. From the `stages`/ directory:
 
 ```
 pixi install --environment stage-2-booz
 ```
 
-**`booz_xform_jax`:** Install via the Pixi environment. From the repo root:
+**`booz_xform_jax`:** Install via the Pixi environment. From the `stages`/ directory:
 
 ```
 pixi install --environment stage-2-booz-jax
@@ -149,7 +149,7 @@ where $w$ is reconstructed from the original covariant field harmonics.
 
 ## Scripts & Workflows
 
-**`booz_xform` (via Pixi):** From the repo root:
+**`booz_xform` (via Pixi):** From the `stages`/ directory:
 
 ```
 pixi run stage-2-booz
@@ -157,7 +157,7 @@ pixi run stage-2-booz
 
 Smoke-test task: verifies the `booz_xform` package is importable. A full end-to-end example for the legacy code is TBD.
 
-**`booz_xform_jax` (via Pixi):** From the repo root:
+**`booz_xform_jax` (via Pixi):** From the `stages`/ directory:
 
 ```
 pixi run -e stage-2-booz-jax stage-2-booz

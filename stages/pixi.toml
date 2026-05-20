@@ -43,6 +43,9 @@ cmd = "sfincs_jax stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun --ou
 [feature.sfincs-jax.tasks.stage-3-sfincs-radial-scan]
 cmd = "python stage3-neoclassical/sfincs_jax_radial_scan.py"
 
+[feature.neo-jax.dependencies]
+neo-jax = ">=1.0.1,<2"
+
 [feature.spectrax-gk.dependencies]
 spectraxgk = ">=1.5.0,<2"
 booz-xform-jax = ">=0.1.0,<0.2"
@@ -89,6 +92,8 @@ stage-2-booz-jax-gpu = {features = ["booz-xform-jax", "cuda"], no-default-featur
 stage-3-sfincs-fortran = {features = ["sfincs"], no-default-feature = true}
 stage-3-sfincs = {features = ["sfincs-jax"], no-default-feature = true}
 stage-3-sfincs-gpu = {features = ["sfincs-jax", "cuda"], no-default-feature = true }
+stage-3-neo-jax = {features = ["neo-jax"], no-default-feature = true}
+stage-3-neo-jax-gpu = {features = ["neo-jax", "cuda"], no-default-feature = true }
 stage-4-spectrax = {features = ["spectrax-gk"], no-default-feature = true}
 stage-4-spectrax-gpu = {features = ["spectrax-gk", "cuda"], no-default-feature = true }
 stage-5-neopax = {features = ["neopax"], no-default-feature = true}
