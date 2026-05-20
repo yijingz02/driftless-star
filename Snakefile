@@ -4,6 +4,11 @@ configfile: "config.yaml"
 
 RUN_NAME = config["run_name"]
 DIRS = config["directories"]
+FILES = config["filenames"]
+
+
+def filename(key):
+    return FILES[key].format(run_name=RUN_NAME)
 
 STAGE1_INPUT_DIR  = DIRS["stage1_input"]
 STAGE1_OUTPUT_DIR = DIRS["stage1_output"]
@@ -37,15 +42,15 @@ DOCKER_PREFIX = (
     '-v "$PWD:/work" -w /work'
 )
 
-S1_INPUT  = f"{STAGE1_INPUT_DIR}/input.{RUN_NAME}"
-S1_OUTPUT = f"{STAGE1_OUTPUT_DIR}/wout_{RUN_NAME}.nc"
-S2_OUTPUT = f"{STAGE2_OUTPUT_DIR}/boozmn_{RUN_NAME}.nc"
+S1_INPUT  = f"{STAGE1_INPUT_DIR}/{filename('s1_input')}"
+S1_OUTPUT = f"{STAGE1_OUTPUT_DIR}/{filename('s1_output')}"
+S2_OUTPUT = f"{STAGE2_OUTPUT_DIR}/{filename('s2_output')}"
 
 # Stage 3 sfincs_jax radial-scan config + derived paths.
 STAGE3_CFG  = config["stage3"]["sfincs_jax"]
-S3_CONFIG   = STAGE3_CFG["config"] or f"{STAGE3_INPUT_DIR}/input.{RUN_NAME}"
+S3_CONFIG   = f"{STAGE3_INPUT_DIR}/{filename('s3_config')}"
 S3_OUTDIR   = f"{STAGE3_OUTPUT_DIR}/{STAGE3_CFG['output_subdir']}"
-S3_OUTPUT   = f"{S3_OUTDIR}/sfincs_jax_flux_profiles.h5"
+S3_OUTPUT   = f"{S3_OUTDIR}/{filename('s3_output')}"
 
 
 _STAGE3_OPTIONAL_FLAGS = [
@@ -93,9 +98,9 @@ def _stage3_radial_scan_cmd() -> str:
 
 # Stage 4 spectrax-gk radial-scan config + derived paths.
 STAGE4_CFG  = config["stage4"]["spectrax_gk"]
-S4_CONFIG   = STAGE4_CFG["config"] or f"{STAGE4_INPUT_DIR}/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml"
+S4_CONFIG   = f"{STAGE4_INPUT_DIR}/{filename('s4_config')}"
 S4_OUTDIR   = f"{STAGE4_OUTPUT_DIR}/{STAGE4_CFG['output_subdir']}"
-S4_OUTPUT   = f"{S4_OUTDIR}/neopax_fluxes.h5"
+S4_OUTPUT   = f"{S4_OUTDIR}/{filename('s4_output')}"
 
 
 _STAGE4_OPTIONAL_FLAGS = [
@@ -149,9 +154,8 @@ def _stage4_radial_scan_cmd() -> str:
 
 
 # Stage 5 NEOPAX transport solver.
-STAGE5_CFG = config["stage5"]["neopax"]
-S5_CONFIG  = f"{STAGE5_INPUT_DIR}/{STAGE5_CFG['config']}"
-S5_OUTPUT  = f"{STAGE5_OUTPUT_DIR}/transport_solution.h5"
+S5_CONFIG  = f"{STAGE5_INPUT_DIR}/{filename('s5_config')}"
+S5_OUTPUT  = f"{STAGE5_OUTPUT_DIR}/{filename('s5_output')}"
 
 
 # Terminal artifact of the MVP forward pass.
@@ -205,7 +209,7 @@ rule stage5_neopax:
         S5_OUTPUT,
     shell:
         f"{DOCKER_PREFIX} {STAGE5_IMG} "
-        f'sh -c "cd {STAGE5_INPUT_DIR} && neopax {STAGE5_CFG["config"]}"'
+        f"sh -c \"cd {STAGE5_INPUT_DIR} && neopax {filename('s5_config')}\""
 
 rule clean:
     shell:

@@ -19,11 +19,20 @@ directories:
   stage5_input: stages/stage5-transport/input
   stage5_output: stages/stage5-transport/output
 
+filenames:
+  s1_input: input.{run_name}
+  s1_output: wout_{run_name}.nc
+  s2_output: boozmn_{run_name}.nc
+  s3_config: input.{run_name}
+  s3_output: sfincs_jax_flux_profiles.h5
+  s4_config: "{run_name}.toml"
+  s4_output: neopax_fluxes.h5
+  s5_config: Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
+  s5_output: transport_solution.h5
+
 # Stage 3 SFINCS (sfincs_jax) radial scan.
 stage3:
   sfincs_jax:
-    config: null
-
     # --- Profile source ---
     profiles_source: analytical
     neopax_result: null
@@ -50,8 +59,6 @@ stage3:
 # Stage 4 SPECTRAX-GK radial scan.
 stage4:
   spectrax_gk:
-    config: null
-
     # --- Profile source ---
     profiles_source: analytical
     neopax_result: null
@@ -78,9 +85,3 @@ stage4:
     plot_run_heat_traces: true
     verbose_workers: true
     collect_even_if_failures: true
-
-# Stage 5 NEOPAX transport solver.
-# The neopax CLI takes a single TOML; everything else lives in that file.
-stage5:
-  neopax:
-    config: Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
