@@ -159,3 +159,9 @@ stage4:
     plot_run_heat_traces: true
     verbose_workers: true
     collect_even_if_failures: true
+
+# Stage 5 NEOPAX transport solver.
+# The neopax CLI takes a single TOML; everything else lives in that file.
+stage5:
+  neopax:
+    toml: stages/stage5-transport/input/Solve_Transport_equations_noHe_radau_HSX_quickrun.toml

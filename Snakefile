@@ -15,6 +15,7 @@ STAGE1_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-1-vmec-{DEVICE}"
 STAGE2_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-2-booz-jax-{DEVICE}"
 STAGE3_JAX_IMG = f"ghcr.io/rkhashmani/stellaforge:stage-3-sfincs-{DEVICE}"
 STAGE4_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-4-spectrax-{DEVICE}"
+STAGE5_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-5-neopax-{DEVICE}"
 
 # --user: make bind-mounted writes host-owned (Linux docker otherwise writes as root).
 # -e HOME=/tmp: pixi activation needs a writable HOME after dropping root.
@@ -193,14 +194,15 @@ def _stage4_radial_scan_cmd() -> str:
     return " ".join(parts)
 
 
-# Terminal artifacts of the MVP forward pass. When Stage 5 (NEOPAX) lands,
-# this list collapses to the single (or multiple) final Stage 5 output(s); Stages 2-4 outputs
-# become transitive intermediates and drop out of `rule all`.
+# Stage 5 NEOPAX transport solver.
+STAGE5_CFG = config["stage5"]["neopax"]
+S5_OUTPUT  = "stages/stage5-transport/output/transport_solution.h5"
+
+
+# Terminal artifact of the MVP forward pass.
 rule all:
     input:
-        f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
-        S3_OUTPUT,
-        S4_OUTPUT,
+        S5_OUTPUT,
 
 rule stage1_vmec:
     input:  f"stages/stage1-equilibrium/input/input.{RUN_NAME}"
@@ -237,9 +239,23 @@ rule stage4_spectrax:
     shell:
         _stage4_radial_scan_cmd()
 
+rule stage5_neopax:
+    input:
+        toml    = STAGE5_CFG["toml"],
+        wout    = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
+        boozer  = f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
+        neo_h5  = S3_OUTPUT,
+        turb_h5 = S4_OUTPUT,
+    output:
+        S5_OUTPUT,
+    shell:
+        f"{DOCKER_PREFIX} {STAGE5_IMG} "
+        'sh -c "cd stages/stage5-transport/input && neopax Solve_Transport_equations_noHe_radau_HSX_quickrun.toml"'
+
 rule clean:
     shell:
         """
         rm -rf stages/stage1-equilibrium/output stages/stage2-boozer/output \
-               stages/stage3-neoclassical/output stages/stage4-turbulence/output
+               stages/stage3-neoclassical/output stages/stage4-turbulence/output \
+               stages/stage5-transport/output
         """
