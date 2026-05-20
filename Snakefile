@@ -146,6 +146,36 @@ S5_CONFIG  = f"{DIRS['stage5_input']}/{filename('s5_config')}"
 S5_OUTPUT  = f"{DIRS['stage5_output']}/{filename('s5_output')}"
 
 
+# In-place key-value rewriter. Replaces the right-hand side of
+# `key = ...` in `file_path` with `value` (verbatim).
+def set_assignment(file_path: str, key: str, value: str) -> None:
+    import re
+    from pathlib import Path
+
+    path = Path(file_path)
+    if not path.exists():
+        return
+    raw = path.read_bytes()
+    text = raw.decode("utf-8")
+    new_text = re.sub(
+        rf'^({re.escape(key)}[ \t]*=[ \t]*)[^\r\n]*',
+        lambda m: f'{m.group(1)}{value}',
+        text,
+        flags=re.MULTILINE,
+    )
+    if new_text != text:
+        path.write_bytes(new_text.encode("utf-8"))
+
+
+# Update NEOPAX *_file fields in the Stage 5 TOML to the current pipeline outputs.
+import os.path
+_TOML_DIR = os.path.dirname(S5_CONFIG)
+set_assignment(S5_CONFIG, "vmec_file",         f'"{os.path.relpath(S1_OUTPUT, _TOML_DIR)}"')
+set_assignment(S5_CONFIG, "boozer_file",       f'"{os.path.relpath(S2_OUTPUT, _TOML_DIR)}"')
+set_assignment(S5_CONFIG, "neoclassical_file", f'"{os.path.relpath(S3_OUTPUT, _TOML_DIR)}"')
+set_assignment(S5_CONFIG, "turbulence_file",   f'"{os.path.relpath(S4_OUTPUT, _TOML_DIR)}"')
+
+
 # Terminal artifact of the MVP forward pass.
 rule all:
     input:
