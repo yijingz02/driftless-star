@@ -77,7 +77,7 @@ DEFAULT_NEOPAX_CONFIG = (
     STAGES_DIR / "stage5-transport" / "input" / "Solve_Transport_equations_noHe_radau_HSX_quickrun.toml"
 )
 DEFAULT_SFINCS_TEMPLATE = SCRIPT_DIR / "input" / "input.HSX_vacuum_ns201_quickrun"
-DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "output" / "HSX_vacuum_ns201_nx4_quickrun"
+DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "output" / "HSX_vacuum_ns201_quickrun"
 
 
 @dataclass(frozen=True)
