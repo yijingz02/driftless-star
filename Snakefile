@@ -3,10 +3,12 @@
 configfile: "config.yaml"
 
 RUN_NAME = config["run_name"]
-DIRS = config["directories"]
+# Substitute {run_name} into each directory value; literal paths pass through unchanged.
+DIRS = {k: v.format(run_name=RUN_NAME) for k, v in config["directories"].items()}
 FILES = config["filenames"]
 
 
+# Substitute {run_name} into the filename for `key`; literal names pass through unchanged.
 def filename(key):
     return FILES[key].format(run_name=RUN_NAME)
 
@@ -49,7 +51,7 @@ S2_OUTPUT = f"{STAGE2_OUTPUT_DIR}/{filename('s2_output')}"
 # Stage 3 sfincs_jax radial-scan config + derived paths.
 STAGE3_CFG  = config["stage3"]["sfincs_jax"]
 S3_CONFIG   = f"{STAGE3_INPUT_DIR}/{filename('s3_config')}"
-S3_OUTDIR   = f"{STAGE3_OUTPUT_DIR}/{STAGE3_CFG['output_subdir']}"
+S3_OUTDIR   = STAGE3_OUTPUT_DIR
 S3_OUTPUT   = f"{S3_OUTDIR}/{filename('s3_output')}"
 
 
@@ -99,7 +101,7 @@ def _stage3_radial_scan_cmd() -> str:
 # Stage 4 spectrax-gk radial-scan config + derived paths.
 STAGE4_CFG  = config["stage4"]["spectrax_gk"]
 S4_CONFIG   = f"{STAGE4_INPUT_DIR}/{filename('s4_config')}"
-S4_OUTDIR   = f"{STAGE4_OUTPUT_DIR}/{STAGE4_CFG['output_subdir']}"
+S4_OUTDIR   = STAGE4_OUTPUT_DIR
 S4_OUTPUT   = f"{S4_OUTDIR}/{filename('s4_output')}"
 
 

@@ -13,9 +13,9 @@ directories:
   stage1_output: stages/stage1-equilibrium/output
   stage2_output: stages/stage2-boozer/output
   stage3_input: stages/stage3-neoclassical/input
-  stage3_output: stages/stage3-neoclassical/output
+  stage3_output: stages/stage3-neoclassical/output/{run_name}
   stage4_input: stages/stage4-turbulence/input
-  stage4_output: stages/stage4-turbulence/output
+  stage4_output: stages/stage4-turbulence/output/{run_name}
   stage5_input: stages/stage5-transport/input
   stage5_output: stages/stage5-transport/output
 
@@ -36,9 +36,6 @@ stage3:
     # --- Profile source ---
     profiles_source: analytical
     neopax_result: null
-
-    # --- Output ---
-    output_subdir: HSX_vacuum_ns201_nx4_quickrun
 
     # --- Resolution ---
     ntheta: 5
@@ -62,9 +59,6 @@ stage4:
     # --- Profile source ---
     profiles_source: analytical
     neopax_result: null
-
-    # --- Output ---
-    output_subdir: spectrax_HSX_quickrun
 
     # --- Resolution / time window ---
     nx: 12
