@@ -33,7 +33,7 @@ Reference: `stellarator_workflow.tex`, Section 4.7; `stellarator_io_reference.te
 
 ### Installation & Platform
 
-**`SPECTRAX-GK`:** Install via the Pixi environment. From the repo root:
+**`SPECTRAX-GK`:** Install via the Pixi environment. From the `stages`/ directory:
 
 ```
 pixi install --environment stage-4-spectrax
@@ -178,7 +178,7 @@ Reference: `stellarator_workflow.tex`, Section 4.7.
 
 ## Scripts & Workflows
 
-**`SPECTRAX-GK` (via Pixi):** From the repo root:
+**`SPECTRAX-GK` (via Pixi):** From the `stages`/ directory:
 
 ```
 pixi run stage-4-spectrax

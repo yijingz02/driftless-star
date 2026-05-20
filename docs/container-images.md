@@ -4,7 +4,7 @@
 
 ### Building Docker container images
 
-The Dockerfile lives in `stages/`, which is also the build context. From the repo root:
+The Dockerfile lives in `stages/`, which is also the build context. From the `stages`/ directory:
 
 ```
 docker build --file stages/Dockerfile --build-arg <build-args> --tag <tag> stages/
