@@ -34,6 +34,10 @@ DOCKER_PREFIX = (
     '-v "$PWD:/work" -w /work'
 )
 
+# Propagate failures through `cmd | tee {log}` pipelines so a crashed stage
+# does not look successful just because tee exited 0.
+shell.prefix("set -o pipefail; ")
+
 S1_INPUT  = f"{DIRS['stage1_input']}/{filename('s1_input')}"
 S1_OUTPUT = f"{DIRS['stage1_output']}/{filename('s1_output')}"
 S2_OUTPUT = f"{DIRS['stage2_output']}/{filename('s2_output')}"
@@ -184,16 +188,20 @@ rule all:
 rule stage1_vmec:
     input:  S1_INPUT
     output: S1_OUTPUT
+    log:    f"{DIRS['stage1_output']}/{RUN_NAME}.log"
     shell:
         f"{DOCKER_PREFIX} {STAGE1_IMG} "
         f"vmec_jax {{input}} --outdir {DIRS['stage1_output']}"
+        " 2>&1 | tee {log}"
 
 rule stage2_boozer:
     input:  S1_OUTPUT
     output: S2_OUTPUT
+    log:    f"{DIRS['stage2_output']}/{RUN_NAME}.log"
     shell:
         f"{DOCKER_PREFIX} {STAGE2_IMG} "
         "python stages/stage2-boozer/run_boozer.py --wout {input} --output {output}"
+        " 2>&1 | tee {log}"
 
 rule stage3_sfincs:
     input:
@@ -202,8 +210,10 @@ rule stage3_sfincs:
         neopax_config = S5_CONFIG,
     output:
         S3_OUTPUT,
+    log:
+        f"{DIRS['stage3_output']}/{RUN_NAME}.log"
     shell:
-        _stage3_radial_scan_cmd()
+        _stage3_radial_scan_cmd() + " 2>&1 | tee {log}"
 
 rule stage4_spectrax:
     input:
@@ -213,8 +223,10 @@ rule stage4_spectrax:
         neopax_config = S5_CONFIG,
     output:
         S4_OUTPUT,
+    log:
+        f"{DIRS['stage4_output']}/{RUN_NAME}.log"
     shell:
-        _stage4_radial_scan_cmd()
+        _stage4_radial_scan_cmd() + " 2>&1 | tee {log}"
 
 rule stage5_neopax:
     input:
@@ -225,9 +237,12 @@ rule stage5_neopax:
         turb_h5 = S4_OUTPUT,
     output:
         S5_OUTPUT,
+    log:
+        f"{DIRS['stage5_output']}/{RUN_NAME}.log"
     shell:
         f"{DOCKER_PREFIX} {STAGE5_IMG} "
         f"sh -c \"cd {DIRS['stage5_input']} && neopax {filename('s5_config')}\""
+        " 2>&1 | tee {log}"
 
 rule clean:
     shell:
