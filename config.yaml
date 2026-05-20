@@ -7,6 +7,18 @@ run_name: HSX_vacuum_ns201_quickrun
 # Container runtime device. One of: cpu, gpu.
 device: cpu
 
+# Stage input/output directories used to construct pipeline file contracts.
+directories:
+  stage1_input: stages/stage1-equilibrium/input
+  stage1_output: stages/stage1-equilibrium/output
+  stage2_output: stages/stage2-boozer/output
+  stage3_input: stages/stage3-neoclassical/input
+  stage3_output: stages/stage3-neoclassical/output
+  stage4_input: stages/stage4-turbulence/input
+  stage4_output: stages/stage4-turbulence/output
+  stage5_input: stages/stage5-transport/input
+  stage5_output: stages/stage5-transport/output
+
 # Stage 3 SFINCS (sfincs_jax) radial scan.
 stage3:
   sfincs_jax:

@@ -3,6 +3,17 @@
 configfile: "config.yaml"
 
 RUN_NAME = config["run_name"]
+DIRS = config["directories"]
+
+STAGE1_INPUT_DIR  = DIRS["stage1_input"]
+STAGE1_OUTPUT_DIR = DIRS["stage1_output"]
+STAGE2_OUTPUT_DIR = DIRS["stage2_output"]
+STAGE3_INPUT_DIR  = DIRS["stage3_input"]
+STAGE3_OUTPUT_DIR = DIRS["stage3_output"]
+STAGE4_INPUT_DIR  = DIRS["stage4_input"]
+STAGE4_OUTPUT_DIR = DIRS["stage4_output"]
+STAGE5_INPUT_DIR  = DIRS["stage5_input"]
+STAGE5_OUTPUT_DIR = DIRS["stage5_output"]
 
 DEVICE = config.get("device", "cpu")
 if DEVICE not in ("cpu", "gpu"):
@@ -26,10 +37,14 @@ DOCKER_PREFIX = (
     '-v "$PWD:/work" -w /work'
 )
 
+S1_INPUT  = f"{STAGE1_INPUT_DIR}/input.{RUN_NAME}"
+S1_OUTPUT = f"{STAGE1_OUTPUT_DIR}/wout_{RUN_NAME}.nc"
+S2_OUTPUT = f"{STAGE2_OUTPUT_DIR}/boozmn_{RUN_NAME}.nc"
+
 # Stage 3 sfincs_jax radial-scan config + derived paths.
 STAGE3_CFG  = config["stage3"]["sfincs_jax"]
-S3_CONFIG   = STAGE3_CFG["config"] or f"stages/stage3-neoclassical/input/input.{RUN_NAME}"
-S3_OUTDIR   = f"stages/stage3-neoclassical/output/{STAGE3_CFG['output_subdir']}"
+S3_CONFIG   = STAGE3_CFG["config"] or f"{STAGE3_INPUT_DIR}/input.{RUN_NAME}"
+S3_OUTDIR   = f"{STAGE3_OUTPUT_DIR}/{STAGE3_CFG['output_subdir']}"
 S3_OUTPUT   = f"{S3_OUTDIR}/sfincs_jax_flux_profiles.h5"
 
 
@@ -78,8 +93,8 @@ def _stage3_radial_scan_cmd() -> str:
 
 # Stage 4 spectrax-gk radial-scan config + derived paths.
 STAGE4_CFG  = config["stage4"]["spectrax_gk"]
-S4_CONFIG   = STAGE4_CFG["config"] or "stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml"
-S4_OUTDIR   = f"stages/stage4-turbulence/output/{STAGE4_CFG['output_subdir']}"
+S4_CONFIG   = STAGE4_CFG["config"] or f"{STAGE4_INPUT_DIR}/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml"
+S4_OUTDIR   = f"{STAGE4_OUTPUT_DIR}/{STAGE4_CFG['output_subdir']}"
 S4_OUTPUT   = f"{S4_OUTDIR}/neopax_fluxes.h5"
 
 
@@ -135,9 +150,8 @@ def _stage4_radial_scan_cmd() -> str:
 
 # Stage 5 NEOPAX transport solver.
 STAGE5_CFG = config["stage5"]["neopax"]
-S5_INPUT_DIR = "stages/stage5-transport/input"
-S5_CONFIG  = f"{S5_INPUT_DIR}/{STAGE5_CFG['config']}"
-S5_OUTPUT  = "stages/stage5-transport/output/transport_solution.h5"
+S5_CONFIG  = f"{STAGE5_INPUT_DIR}/{STAGE5_CFG['config']}"
+S5_OUTPUT  = f"{STAGE5_OUTPUT_DIR}/transport_solution.h5"
 
 
 # Terminal artifact of the MVP forward pass.
@@ -146,15 +160,15 @@ rule all:
         S5_OUTPUT,
 
 rule stage1_vmec:
-    input:  f"stages/stage1-equilibrium/input/input.{RUN_NAME}"
-    output: f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc"
+    input:  S1_INPUT
+    output: S1_OUTPUT
     shell:
         f"{DOCKER_PREFIX} {STAGE1_IMG} "
-        "vmec_jax {input} --outdir stages/stage1-equilibrium/output"
+        f"vmec_jax {{input}} --outdir {STAGE1_OUTPUT_DIR}"
 
 rule stage2_boozer:
-    input:  f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc"
-    output: f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc"
+    input:  S1_OUTPUT
+    output: S2_OUTPUT
     shell:
         f"{DOCKER_PREFIX} {STAGE2_IMG} "
         "python stages/stage2-boozer/run_boozer.py --wout {input} --output {output}"
@@ -162,7 +176,7 @@ rule stage2_boozer:
 rule stage3_sfincs:
     input:
         config_file = S3_CONFIG,
-        wout        = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
+        wout        = S1_OUTPUT,
         neopax_config = S5_CONFIG,
     output:
         S3_OUTPUT,
@@ -172,8 +186,8 @@ rule stage3_sfincs:
 rule stage4_spectrax:
     input:
         config_file = S4_CONFIG,
-        wout        = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
-        boozer      = f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
+        wout        = S1_OUTPUT,
+        boozer      = S2_OUTPUT,
         neopax_config = S5_CONFIG,
     output:
         S4_OUTPUT,
@@ -183,20 +197,20 @@ rule stage4_spectrax:
 rule stage5_neopax:
     input:
         config_file = S5_CONFIG,
-        wout    = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
-        boozer  = f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
+        wout    = S1_OUTPUT,
+        boozer  = S2_OUTPUT,
         neo_h5  = S3_OUTPUT,
         turb_h5 = S4_OUTPUT,
     output:
         S5_OUTPUT,
     shell:
         f"{DOCKER_PREFIX} {STAGE5_IMG} "
-        f'sh -c "cd {S5_INPUT_DIR} && neopax {STAGE5_CFG["config"]}"'
+        f'sh -c "cd {STAGE5_INPUT_DIR} && neopax {STAGE5_CFG["config"]}"'
 
 rule clean:
     shell:
-        """
-        rm -rf stages/stage1-equilibrium/output stages/stage2-boozer/output \
-               stages/stage3-neoclassical/output stages/stage4-turbulence/output \
-               stages/stage5-transport/output
+        f"""
+        rm -rf {STAGE1_OUTPUT_DIR} {STAGE2_OUTPUT_DIR} \
+               {STAGE3_OUTPUT_DIR} {STAGE4_OUTPUT_DIR} \
+               {STAGE5_OUTPUT_DIR}
         """
