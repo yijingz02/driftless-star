@@ -12,16 +12,6 @@ FILES = config["filenames"]
 def filename(key):
     return FILES[key].format(run_name=RUN_NAME)
 
-STAGE1_INPUT_DIR  = DIRS["stage1_input"]
-STAGE1_OUTPUT_DIR = DIRS["stage1_output"]
-STAGE2_OUTPUT_DIR = DIRS["stage2_output"]
-STAGE3_INPUT_DIR  = DIRS["stage3_input"]
-STAGE3_OUTPUT_DIR = DIRS["stage3_output"]
-STAGE4_INPUT_DIR  = DIRS["stage4_input"]
-STAGE4_OUTPUT_DIR = DIRS["stage4_output"]
-STAGE5_INPUT_DIR  = DIRS["stage5_input"]
-STAGE5_OUTPUT_DIR = DIRS["stage5_output"]
-
 DEVICE = config.get("device", "cpu")
 if DEVICE not in ("cpu", "gpu"):
     raise ValueError(
@@ -44,15 +34,14 @@ DOCKER_PREFIX = (
     '-v "$PWD:/work" -w /work'
 )
 
-S1_INPUT  = f"{STAGE1_INPUT_DIR}/{filename('s1_input')}"
-S1_OUTPUT = f"{STAGE1_OUTPUT_DIR}/{filename('s1_output')}"
-S2_OUTPUT = f"{STAGE2_OUTPUT_DIR}/{filename('s2_output')}"
+S1_INPUT  = f"{DIRS['stage1_input']}/{filename('s1_input')}"
+S1_OUTPUT = f"{DIRS['stage1_output']}/{filename('s1_output')}"
+S2_OUTPUT = f"{DIRS['stage2_output']}/{filename('s2_output')}"
 
 # Stage 3 sfincs_jax radial-scan config + derived paths.
 STAGE3_CFG  = config["stage3"]["sfincs_jax"]
-S3_CONFIG   = f"{STAGE3_INPUT_DIR}/{filename('s3_config')}"
-S3_OUTDIR   = STAGE3_OUTPUT_DIR
-S3_OUTPUT   = f"{S3_OUTDIR}/{filename('s3_output')}"
+S3_CONFIG   = f"{DIRS['stage3_input']}/{filename('s3_config')}"
+S3_OUTPUT   = f"{DIRS['stage3_output']}/{filename('s3_output')}"
 
 
 _STAGE3_OPTIONAL_FLAGS = [
@@ -74,24 +63,23 @@ _STAGE3_BOOL_FLAGS = [
 
 def _stage3_radial_scan_cmd() -> str:
     """Compose the Stage 3 sfincs_jax radial-scan shell command from config."""
-    s = STAGE3_CFG
     parts = [
         f"{DOCKER_PREFIX} {STAGE3_JAX_IMG}",
         "python stages/stage3-neoclassical/sfincs_jax_radial_scan.py",
         "--neopax-config {input.neopax_config}",
         "--sfincs-template {input.config_file}",
         "--wout-path {input.wout}",
-        f"--output-dir {S3_OUTDIR}",
+        f"--output-dir {DIRS['stage3_output']}",
         f"--backend {DEVICE}",
     ]
     for key, flag in _STAGE3_OPTIONAL_FLAGS:
-        v = s.get(key)
+        v = STAGE3_CFG.get(key)
         if v is not None:
             parts.append(f"{flag} {v}")
-    if DEVICE == "gpu" and s.get("gpu_ids") is not None:
-        parts.append(f"--gpu-ids {s['gpu_ids']}")
+    if DEVICE == "gpu" and STAGE3_CFG.get("gpu_ids") is not None:
+        parts.append(f"--gpu-ids {STAGE3_CFG['gpu_ids']}")
     for key, on, off in _STAGE3_BOOL_FLAGS:
-        v = s.get(key)
+        v = STAGE3_CFG.get(key)
         if v is True:
             parts.append(on)
         elif v is False:
@@ -100,9 +88,8 @@ def _stage3_radial_scan_cmd() -> str:
 
 # Stage 4 spectrax-gk radial-scan config + derived paths.
 STAGE4_CFG  = config["stage4"]["spectrax_gk"]
-S4_CONFIG   = f"{STAGE4_INPUT_DIR}/{filename('s4_config')}"
-S4_OUTDIR   = STAGE4_OUTPUT_DIR
-S4_OUTPUT   = f"{S4_OUTDIR}/{filename('s4_output')}"
+S4_CONFIG   = f"{DIRS['stage4_input']}/{filename('s4_config')}"
+S4_OUTPUT   = f"{DIRS['stage4_output']}/{filename('s4_output')}"
 
 
 _STAGE4_OPTIONAL_FLAGS = [
@@ -129,7 +116,6 @@ _STAGE4_BOOL_FLAGS = [
 
 def _stage4_radial_scan_cmd() -> str:
     """Compose the Stage 4 spectrax-gk radial-scan shell command from config."""
-    s = STAGE4_CFG
     parts = [
         f"{DOCKER_PREFIX} {STAGE4_IMG}",
         "python stages/stage4-turbulence/spectrax_gk_radial_scan.py",
@@ -137,17 +123,17 @@ def _stage4_radial_scan_cmd() -> str:
         "--spectrax-template {input.config_file}",
         "--vmec-file-override {input.wout}",
         "--boozer-file-override {input.boozer}",
-        f"--output-dir {S4_OUTDIR}",
+        f"--output-dir {DIRS['stage4_output']}",
         f"--backend {DEVICE}",
     ]
     for key, flag in _STAGE4_OPTIONAL_FLAGS:
-        v = s.get(key)
+        v = STAGE4_CFG.get(key)
         if v is not None:
             parts.append(f"{flag} {v}")
-    if DEVICE == "gpu" and s.get("gpu_ids") is not None:
-        parts.append(f"--gpu-ids {s['gpu_ids']}")
+    if DEVICE == "gpu" and STAGE4_CFG.get("gpu_ids") is not None:
+        parts.append(f"--gpu-ids {STAGE4_CFG['gpu_ids']}")
     for key, on, off in _STAGE4_BOOL_FLAGS:
-        v = s.get(key)
+        v = STAGE4_CFG.get(key)
         if v is True:
             parts.append(on)
         elif v is False:
@@ -156,8 +142,8 @@ def _stage4_radial_scan_cmd() -> str:
 
 
 # Stage 5 NEOPAX transport solver.
-S5_CONFIG  = f"{STAGE5_INPUT_DIR}/{filename('s5_config')}"
-S5_OUTPUT  = f"{STAGE5_OUTPUT_DIR}/{filename('s5_output')}"
+S5_CONFIG  = f"{DIRS['stage5_input']}/{filename('s5_config')}"
+S5_OUTPUT  = f"{DIRS['stage5_output']}/{filename('s5_output')}"
 
 
 # Terminal artifact of the MVP forward pass.
@@ -170,7 +156,7 @@ rule stage1_vmec:
     output: S1_OUTPUT
     shell:
         f"{DOCKER_PREFIX} {STAGE1_IMG} "
-        f"vmec_jax {{input}} --outdir {STAGE1_OUTPUT_DIR}"
+        f"vmec_jax {{input}} --outdir {DIRS['stage1_output']}"
 
 rule stage2_boozer:
     input:  S1_OUTPUT
@@ -211,12 +197,12 @@ rule stage5_neopax:
         S5_OUTPUT,
     shell:
         f"{DOCKER_PREFIX} {STAGE5_IMG} "
-        f"sh -c \"cd {STAGE5_INPUT_DIR} && neopax {filename('s5_config')}\""
+        f"sh -c \"cd {DIRS['stage5_input']} && neopax {filename('s5_config')}\""
 
 rule clean:
     shell:
         f"""
-        rm -rf {STAGE1_OUTPUT_DIR} {STAGE2_OUTPUT_DIR} \
-               {STAGE3_OUTPUT_DIR} {STAGE4_OUTPUT_DIR} \
-               {STAGE5_OUTPUT_DIR}
+        rm -rf {DIRS['stage1_output']} {DIRS['stage2_output']} \
+               {DIRS['stage3_output']} {DIRS['stage4_output']} \
+               {DIRS['stage5_output']}
         """
