@@ -8,7 +8,6 @@ run_name: HSX_vacuum_ns201_quickrun
 device: cpu
 
 # Stage 3 SFINCS (sfincs_jax) radial scan.
-# Defaults match the script's defaults (for the quickrun test).
 stage3:
   sfincs_jax:
     neopax_config: stages/stage5-transport/input/Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
@@ -18,46 +17,27 @@ stage3:
     # --- Profile source ---
     profiles_source: analytical
     neopax_result: null
-    analytical_n_radii: 51
-    time_index: -1
 
     # --- Output ---
     output_subdir: HSX_vacuum_ns201_nx4_quickrun
-
-    # --- Surface selection ---
-    rho_indices: null
-    rho_min: null
-    rho_max: null
-    num_radii: null
-
-    # --- Phi1 tri-state ---
-    include_phi1: null
 
     # --- Resolution ---
     ntheta: 5
     nzeta: 11
     nxi: 12
-    nl: 3
     nx: 4
     solver_tolerance: 1.0e-6
-    dense_fp_max: null
 
     # --- Parallelism ---
     max_parallel: 8
-    cores_per_run: 1
+    # Used only when `device: gpu`.
     gpu_ids: "0"
-    worker_sharding: "off"
-
-    # --- Benchmark ---
-    benchmark_repeats: 0
-    benchmark_warmup: 1
 
     # --- Toggles ---
     plot: true
     verbose_workers: true
 
 # Stage 4 SPECTRAX-GK radial scan.
-# Defaults match the script's defaults (for the quickrun test).
 stage4:
   spectrax_gk:
     neopax_config: stages/stage5-transport/input/Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
@@ -68,91 +48,23 @@ stage4:
     # --- Profile source ---
     profiles_source: analytical
     neopax_result: null
-    analytical_n_radii: null
-    time_index: -1
 
     # --- Output ---
     output_subdir: spectrax_HSX_quickrun
 
-    # --- Species ---
-    electron_model: null
-    reference_ion: null
-
-    # --- Surface selection ---
-    rho_indices: null
-    rho_min: 0.0
-    rho_max: 1.0
-    num_radii: -1
-
-    # --- Profile shaping / collisions ---
-    density_floor: 1.0e-8
-    temperature_floor: 1.0e-8
-    gradient_coordinate: rho
-    gradient_scale: 1.0
-    tprim_scale: 1.0
-    fprim_scale: 1.0
-    tau_e_override: null
-    nu_ion: 0.01
-    nu_electron: 0.0
-    rho_star_physical: null
-
-    # --- Resolution / spatial grid ---
+    # --- Resolution / time window ---
     nx: 12
     ny: 12
-    nz: null
-    lx: null
-    ly: null
-    boundary: null
-    y0: null
     ntheta: 30
-    nperiod: null
-
-    # --- Time integration ---
     t_max: 10.0
-    dt: null
-    method: null
-    use_diffrax: null
-    fixed_dt: null
+    average_window: 1.0
     sample_stride: 50
     diagnostics_stride: 1
-    chunk_steps: null
-    cfl: null
-    state_sharding: null
-
-    # --- Spectral / initialization ---
-    ky: null
-    nl: null
-    nm: null
-    init_field: null
-    init_amp: null
-    alpha: null
-    npol: null
-    beta: null
-
-    # --- Closure / hyperdiffusion (advanced) ---
-    nu_hermite: null
-    nu_laguerre: null
-    nu_hyper: null
-    p_hyper: null
-    hypercollisions_const: null
-    hypercollisions_kz: null
-    d_hyper: null
-    damp_ends_amp: null
-    damp_ends_widthfrac: null
-    hyperdiffusion: null
-
-    # --- Normalization ---
-    normalization_contract: null
-    diagnostic_norm: null
-
-    # --- Averaging ---
-    average_window: 1.0
 
     # --- Parallelism ---
     max_parallel: 1
-    threads_per_run: 1
+    # Used only when `device: gpu`.
     gpu_ids: "0"
-    poll_interval: 2.0
 
     # --- Toggles ---
     plot: true
