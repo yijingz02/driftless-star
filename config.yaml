@@ -10,9 +10,7 @@ device: cpu
 # Stage 3 SFINCS (sfincs_jax) radial scan.
 stage3:
   sfincs_jax:
-    neopax_config: stages/stage5-transport/input/Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
-    sfincs_template: null
-    wout_path: null
+    config: null
 
     # --- Profile source ---
     profiles_source: analytical
@@ -29,7 +27,7 @@ stage3:
     solver_tolerance: 1.0e-6
 
     # --- Parallelism ---
-    max_parallel: 8
+    max_parallel: 1
     # Used only when `device: gpu`.
     gpu_ids: "0"
 
@@ -40,10 +38,7 @@ stage3:
 # Stage 4 SPECTRAX-GK radial scan.
 stage4:
   spectrax_gk:
-    neopax_config: stages/stage5-transport/input/Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
-    spectrax_template: null
-    vmec_file_override: null
-    boozer_file_override: null
+    config: null
 
     # --- Profile source ---
     profiles_source: analytical
@@ -76,4 +71,4 @@ stage4:
 # The neopax CLI takes a single TOML; everything else lives in that file.
 stage5:
   neopax:
-    toml: stages/stage5-transport/input/Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
+    config: Solve_Transport_equations_noHe_radau_HSX_quickrun.toml

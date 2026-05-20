@@ -1,7 +1,5 @@
 # StellaForge MVP Snakemake workflow
 
-from pathlib import Path
-
 configfile: "config.yaml"
 
 RUN_NAME = config["run_name"]
@@ -30,8 +28,7 @@ DOCKER_PREFIX = (
 
 # Stage 3 sfincs_jax radial-scan config + derived paths.
 STAGE3_CFG  = config["stage3"]["sfincs_jax"]
-S3_TEMPLATE = STAGE3_CFG["sfincs_template"] or f"stages/stage3-neoclassical/input/input.{RUN_NAME}"
-S3_WOUT     = STAGE3_CFG["wout_path"]       or f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc"
+S3_CONFIG   = STAGE3_CFG["config"] or f"stages/stage3-neoclassical/input/input.{RUN_NAME}"
 S3_OUTDIR   = f"stages/stage3-neoclassical/output/{STAGE3_CFG['output_subdir']}"
 S3_OUTPUT   = f"{S3_OUTDIR}/sfincs_jax_flux_profiles.h5"
 
@@ -59,8 +56,8 @@ def _stage3_radial_scan_cmd() -> str:
     parts = [
         f"{DOCKER_PREFIX} {STAGE3_JAX_IMG}",
         "python stages/stage3-neoclassical/sfincs_jax_radial_scan.py",
-        "--neopax-config {input.neopax_toml}",
-        "--sfincs-template {input.template}",
+        "--neopax-config {input.neopax_config}",
+        "--sfincs-template {input.config_file}",
         "--wout-path {input.wout}",
         f"--output-dir {S3_OUTDIR}",
         f"--backend {DEVICE}",
@@ -81,9 +78,7 @@ def _stage3_radial_scan_cmd() -> str:
 
 # Stage 4 spectrax-gk radial-scan config + derived paths.
 STAGE4_CFG  = config["stage4"]["spectrax_gk"]
-S4_TEMPLATE = STAGE4_CFG["spectrax_template"] or "stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml"
-S4_WOUT     = STAGE4_CFG["vmec_file_override"]   or f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc"
-S4_BOOZER   = STAGE4_CFG["boozer_file_override"] or f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc"
+S4_CONFIG   = STAGE4_CFG["config"] or "stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml"
 S4_OUTDIR   = f"stages/stage4-turbulence/output/{STAGE4_CFG['output_subdir']}"
 S4_OUTPUT   = f"{S4_OUTDIR}/neopax_fluxes.h5"
 
@@ -116,8 +111,8 @@ def _stage4_radial_scan_cmd() -> str:
     parts = [
         f"{DOCKER_PREFIX} {STAGE4_IMG}",
         "python stages/stage4-turbulence/spectrax_gk_radial_scan.py",
-        "--neopax-config {input.neopax_toml}",
-        "--spectrax-template {input.template}",
+        "--neopax-config {input.neopax_config}",
+        "--spectrax-template {input.config_file}",
         "--vmec-file-override {input.wout}",
         "--boozer-file-override {input.boozer}",
         f"--output-dir {S4_OUTDIR}",
@@ -140,9 +135,8 @@ def _stage4_radial_scan_cmd() -> str:
 
 # Stage 5 NEOPAX transport solver.
 STAGE5_CFG = config["stage5"]["neopax"]
-S5_TOML    = Path(STAGE5_CFG["toml"])
-S5_TOML_DIR  = str(S5_TOML.parent)
-S5_TOML_NAME = S5_TOML.name
+S5_INPUT_DIR = "stages/stage5-transport/input"
+S5_CONFIG  = f"{S5_INPUT_DIR}/{STAGE5_CFG['config']}"
 S5_OUTPUT  = "stages/stage5-transport/output/transport_solution.h5"
 
 
@@ -167,9 +161,9 @@ rule stage2_boozer:
 
 rule stage3_sfincs:
     input:
-        template    = S3_TEMPLATE,
-        wout        = S3_WOUT,
-        neopax_toml = STAGE3_CFG["neopax_config"],
+        config_file = S3_CONFIG,
+        wout        = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
+        neopax_config = S5_CONFIG,
     output:
         S3_OUTPUT,
     shell:
@@ -177,10 +171,10 @@ rule stage3_sfincs:
 
 rule stage4_spectrax:
     input:
-        template    = S4_TEMPLATE,
-        wout        = S4_WOUT,
-        boozer      = S4_BOOZER,
-        neopax_toml = STAGE4_CFG["neopax_config"],
+        config_file = S4_CONFIG,
+        wout        = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
+        boozer      = f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
+        neopax_config = S5_CONFIG,
     output:
         S4_OUTPUT,
     shell:
@@ -188,7 +182,7 @@ rule stage4_spectrax:
 
 rule stage5_neopax:
     input:
-        toml    = str(S5_TOML),
+        config_file = S5_CONFIG,
         wout    = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
         boozer  = f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
         neo_h5  = S3_OUTPUT,
@@ -197,7 +191,7 @@ rule stage5_neopax:
         S5_OUTPUT,
     shell:
         f"{DOCKER_PREFIX} {STAGE5_IMG} "
-        f'sh -c "cd {S5_TOML_DIR} && neopax {S5_TOML_NAME}"'
+        f'sh -c "cd {S5_INPUT_DIR} && neopax {STAGE5_CFG["config"]}"'
 
 rule clean:
     shell:
