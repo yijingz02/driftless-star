@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-#!/usr/bin/env python3
 """Run a radial sfincs_jax flux scan from NEOPAX-style profile inputs.
 
 This script is a first-step bridge between NEOPAX profile definitions/outputs and
