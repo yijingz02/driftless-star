@@ -74,7 +74,8 @@ orthax = ">=0.2.8, <0.3"
 neopax = { git = "https://github.com/uwplasma/NEOPAX.git", rev = "f9b3a91bcd1e44205e418ca302c843e7bb0c700d" }
 
 [feature.neopax.tasks.stage-5-neopax]
-cmd = "cd stage5-transport/input && neopax Solve_Transport_equations_noHe_radau_HSX_quickrun.toml"
+cwd = "stage5-transport/input"
+cmd = "neopax Solve_Transport_equations_noHe_radau_HSX_quickrun.toml"
 
 [feature.cuda]
 platforms = ["linux-64"]
