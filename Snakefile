@@ -34,6 +34,7 @@ DOCKER_PREFIX = (
     '-v "$PWD:/work" -w /work'
 )
 
+shell.executable("bash")
 # Propagate failures through `cmd | tee {log}` pipelines so a crashed stage
 # does not look successful just because tee exited 0.
 shell.prefix("set -o pipefail; ")
