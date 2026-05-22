@@ -1,5 +1,5 @@
 # StellaForge MVP pipeline configuration.
-# CLI overrides `snakemake --config key=value` beats any value here.
+# CLI overrides `snakemake --config key=value` beat any value here.
 
 # Equilibrium / run identifier.
 run_name: HSX_vacuum_ns201_quickrun
