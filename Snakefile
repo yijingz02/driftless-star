@@ -175,10 +175,11 @@ def set_assignment(file_path: str, key: str, value: str) -> None:
 # Update NEOPAX *_file fields in the Stage 5 TOML to the current pipeline outputs.
 import os.path
 _TOML_DIR = os.path.dirname(S5_CONFIG)
-set_assignment(S5_CONFIG, "vmec_file",         f'"{os.path.relpath(S1_OUTPUT, _TOML_DIR)}"')
-set_assignment(S5_CONFIG, "boozer_file",       f'"{os.path.relpath(S2_OUTPUT, _TOML_DIR)}"')
-set_assignment(S5_CONFIG, "neoclassical_file", f'"{os.path.relpath(S3_OUTPUT, _TOML_DIR)}"')
-set_assignment(S5_CONFIG, "turbulence_file",   f'"{os.path.relpath(S4_OUTPUT, _TOML_DIR)}"')
+set_assignment(S5_CONFIG, "vmec_file",            f'"{os.path.relpath(S1_OUTPUT, _TOML_DIR)}"')
+set_assignment(S5_CONFIG, "boozer_file",          f'"{os.path.relpath(S2_OUTPUT, _TOML_DIR)}"')
+set_assignment(S5_CONFIG, "neoclassical_file",    f'"{os.path.relpath(S3_OUTPUT, _TOML_DIR)}"')
+set_assignment(S5_CONFIG, "turbulence_file",      f'"{os.path.relpath(S4_OUTPUT, _TOML_DIR)}"')
+set_assignment(S5_CONFIG, "transport_output_dir", f'"{os.path.relpath(DIRS["stage5_output"], _TOML_DIR)}/"')
 
 
 # Terminal artifact of the MVP forward pass.

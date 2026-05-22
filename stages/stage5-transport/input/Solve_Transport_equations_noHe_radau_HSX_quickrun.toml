@@ -158,5 +158,5 @@ transport_write_hdf5 = true
 transport_compare_ambipolarity_residual = false
 transport_scan_ambipolarity_residual = false
 transport_overlay_reference_er = false
-transport_output_dir = "../output/"
+transport_output_dir = "../output/HSX_vacuum_ns201_quickrun/"
 transport_plot_n_times = -1
