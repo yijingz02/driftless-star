@@ -16,10 +16,7 @@ import argparse
 from pathlib import Path
 import sys
 
-try:
-    import tomllib
-except ModuleNotFoundError:  # pragma: no cover
-    import tomli as tomllib  # type: ignore[import-not-found,no-redef]
+import tomllib
 
 try:
     import NEOPAX.utils.neopax_spectrax_flux_bridge as bridge
