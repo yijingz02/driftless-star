@@ -1,5 +1,7 @@
 # StellaForge MVP Snakemake workflow
 
+from src import stage3, stage4, stage5
+
 configfile: "config.yaml"
 
 RUN_NAME = config["run_name"]
@@ -43,145 +45,25 @@ S1_INPUT  = f"{DIRS['stage1_input']}/{filename('s1_input')}"
 S1_OUTPUT = f"{DIRS['stage1_output']}/{filename('s1_output')}"
 S2_OUTPUT = f"{DIRS['stage2_output']}/{filename('s2_output')}"
 
-# Stage 3 sfincs_jax radial-scan config + derived paths.
-STAGE3_CFG  = config["stage3"]["sfincs_jax"]
-S3_CONFIG   = f"{DIRS['stage3_input']}/{filename('s3_config')}"
-S3_OUTPUT   = f"{DIRS['stage3_output']}/{filename('s3_output')}"
+STAGE3_CFG = config["stage3"]["sfincs_jax"]
+S3_CONFIG  = f"{DIRS['stage3_input']}/{filename('s3_config')}"
+S3_OUTPUT  = f"{DIRS['stage3_output']}/{filename('s3_output')}"
 
+STAGE4_CFG = config["stage4"]["spectrax_gk"]
+S4_CONFIG  = f"{DIRS['stage4_input']}/{filename('s4_config')}"
+S4_OUTPUT  = f"{DIRS['stage4_output']}/{filename('s4_output')}"
 
-_STAGE3_OPTIONAL_FLAGS = [
-    ("profiles_source",   "--profiles-source"),
-    ("neopax_result",     "--neopax-result"),
-    ("ntheta",            "--ntheta"),
-    ("nzeta",             "--nzeta"),
-    ("nxi",               "--nxi"),
-    ("nx",                "--nx"),
-    ("solver_tolerance",  "--solver-tolerance"),
-    ("max_parallel",      "--max-parallel"),
-]
-
-_STAGE3_BOOL_FLAGS = [
-    ("plot",            "--plot",            "--no-plot"),
-    ("verbose_workers", "--verbose-workers", "--no-verbose-workers"),
-]
-
-
-def _stage3_radial_scan_cmd() -> str:
-    """Compose the Stage 3 sfincs_jax radial-scan shell command from config."""
-    parts = [
-        f"{DOCKER_PREFIX} {STAGE3_JAX_IMG}",
-        "python stages/stage3-neoclassical/sfincs_jax_radial_scan.py",
-        "--neopax-config {input.neopax_config}",
-        "--sfincs-template {input.config_file}",
-        "--wout-path {input.wout}",
-        f"--output-dir {DIRS['stage3_output']}",
-        f"--backend {DEVICE}",
-    ]
-    for key, flag in _STAGE3_OPTIONAL_FLAGS:
-        v = STAGE3_CFG.get(key)
-        if v is not None:
-            parts.append(f"{flag} {v}")
-    if DEVICE == "gpu" and STAGE3_CFG.get("gpu_ids") is not None:
-        parts.append(f"--gpu-ids {STAGE3_CFG['gpu_ids']}")
-    for key, on, off in _STAGE3_BOOL_FLAGS:
-        v = STAGE3_CFG.get(key)
-        if v is True:
-            parts.append(on)
-        elif v is False:
-            parts.append(off)
-    return " ".join(parts)
-
-# Stage 4 spectrax-gk radial-scan config + derived paths.
-STAGE4_CFG  = config["stage4"]["spectrax_gk"]
-S4_CONFIG   = f"{DIRS['stage4_input']}/{filename('s4_config')}"
-S4_OUTPUT   = f"{DIRS['stage4_output']}/{filename('s4_output')}"
-
-
-_STAGE4_OPTIONAL_FLAGS = [
-    ("profiles_source",    "--profiles-source"),
-    ("neopax_result",      "--neopax-result"),
-    ("nx",                 "--nx"),
-    ("ny",                 "--ny"),
-    ("ntheta",             "--ntheta"),
-    ("t_max",              "--t-final"),
-    ("average_window",     "--average-window"),
-    ("sample_stride",      "--sample-stride"),
-    ("diagnostics_stride", "--diagnostics-stride"),
-    ("max_parallel",       "--max-parallel"),
-]
-
-# Tri-state booleans: null = use script default, true/false = explicit override.
-_STAGE4_BOOL_FLAGS = [
-    ("plot",                     "--plot",                     "--no-plot"),
-    ("plot_run_heat_traces",     "--plot-run-heat-traces",     "--no-plot-run-heat-traces"),
-    ("verbose_workers",          "--verbose-workers",          "--no-verbose-workers"),
-    ("collect_even_if_failures", "--collect-even-if-failures", "--no-collect-even-if-failures"),
-]
-
-
-def _stage4_radial_scan_cmd() -> str:
-    """Compose the Stage 4 spectrax-gk radial-scan shell command from config."""
-    parts = [
-        f"{DOCKER_PREFIX} {STAGE4_IMG}",
-        "python stages/stage4-turbulence/spectrax_gk_radial_scan.py",
-        "--neopax-config {input.neopax_config}",
-        "--spectrax-template {input.config_file}",
-        "--vmec-file-override {input.wout}",
-        "--boozer-file-override {input.boozer}",
-        f"--output-dir {DIRS['stage4_output']}",
-        f"--backend {DEVICE}",
-    ]
-    for key, flag in _STAGE4_OPTIONAL_FLAGS:
-        v = STAGE4_CFG.get(key)
-        if v is not None:
-            parts.append(f"{flag} {v}")
-    if DEVICE == "gpu" and STAGE4_CFG.get("gpu_ids") is not None:
-        parts.append(f"--gpu-ids {STAGE4_CFG['gpu_ids']}")
-    for key, on, off in _STAGE4_BOOL_FLAGS:
-        v = STAGE4_CFG.get(key)
-        if v is True:
-            parts.append(on)
-        elif v is False:
-            parts.append(off)
-    return " ".join(parts)
-
-
-# Stage 5 NEOPAX transport solver.
 S5_CONFIG  = f"{DIRS['stage5_input']}/{filename('s5_config')}"
 S5_OUTPUT  = f"{DIRS['stage5_output']}/{filename('s5_output')}"
 
-
-# In-place key-value rewriter. Replaces the right-hand side of
-# `key = ...` in `file_path` with `value` (verbatim).
-def set_assignment(file_path: str, key: str, value: str) -> None:
-    import re
-    from pathlib import Path
-
-    path = Path(file_path)
-    if not path.exists():
-        return
-    raw = path.read_bytes()
-    text = raw.decode("utf-8")
-    new_text = re.sub(
-        rf'^({re.escape(key)}[ \t]*=[ \t]*)[^\r\n]*',
-        lambda m: f'{m.group(1)}{value}',
-        text,
-        flags=re.MULTILINE,
-    )
-    if new_text != text:
-        path.write_bytes(new_text.encode("utf-8"))
-
-
-# Update NEOPAX *_file fields in the Stage 5 TOML to the current pipeline outputs.
-from pathlib import Path
-_TOML_DIR = Path(S5_CONFIG).parent.resolve()
-def _toml_rel(p: str) -> str:
-    return str(Path(p).resolve().relative_to(_TOML_DIR, walk_up=True))
-set_assignment(S5_CONFIG, "vmec_file",            f'"{_toml_rel(S1_OUTPUT)}"')
-set_assignment(S5_CONFIG, "boozer_file",          f'"{_toml_rel(S2_OUTPUT)}"')
-set_assignment(S5_CONFIG, "neoclassical_file",    f'"{_toml_rel(S3_OUTPUT)}"')
-set_assignment(S5_CONFIG, "turbulence_file",      f'"{_toml_rel(S4_OUTPUT)}"')
-set_assignment(S5_CONFIG, "transport_output_dir", f'"{_toml_rel(DIRS["stage5_output"])}/"')
+stage5.prepare_neopax_config(
+    s5_config=S5_CONFIG,
+    s5_output_dir=DIRS["stage5_output"],
+    s1_output=S1_OUTPUT,
+    s2_output=S2_OUTPUT,
+    s3_output=S3_OUTPUT,
+    s4_output=S4_OUTPUT,
+)
 
 
 # Terminal artifact of the MVP forward pass.
@@ -217,7 +99,13 @@ rule stage3_sfincs:
     log:
         f"{DIRS['stage3_output']}/{RUN_NAME}.log"
     shell:
-        _stage3_radial_scan_cmd() + " 2>&1 | tee {log}"
+        stage3.radial_scan_cmd(
+            docker_prefix=DOCKER_PREFIX,
+            image=STAGE3_JAX_IMG,
+            stage_cfg=STAGE3_CFG,
+            output_dir=DIRS["stage3_output"],
+            device=DEVICE,
+        ) + " 2>&1 | tee {log}"
 
 rule stage4_spectrax:
     input:
@@ -230,7 +118,13 @@ rule stage4_spectrax:
     log:
         f"{DIRS['stage4_output']}/{RUN_NAME}.log"
     shell:
-        _stage4_radial_scan_cmd() + " 2>&1 | tee {log}"
+        stage4.radial_scan_cmd(
+            docker_prefix=DOCKER_PREFIX,
+            image=STAGE4_IMG,
+            stage_cfg=STAGE4_CFG,
+            output_dir=DIRS["stage4_output"],
+            device=DEVICE,
+        ) + " 2>&1 | tee {log}"
 
 rule stage5_neopax:
     input:
