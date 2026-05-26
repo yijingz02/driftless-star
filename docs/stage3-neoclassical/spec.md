@@ -165,7 +165,7 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 **All Input Fields**:
 
 | Field | Type | Default | Required | Condition | Meaning | Units | 
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|-----------------|----|
 | RHSMode | integer | 1 | No (defaulted) | Always | Option related to the number of right-hand sides (i.e |
 | outputFileName | string | ``sfincsOutput.h5'' | No (defaulted) | Always | Name which will be used for the HDF5 output file |
 | saveMatlabOutput | Boolean | .false. | No (defaulted) | Always | If this switch is set to true, Matlab m-files are created which store the system matrix, right-hand side, and solution vector |
@@ -323,7 +323,7 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 **Primary output:** `sfincsOutput.h5` (HDF5)
 
 | Field | Availability | Meaning | Primary Use | Normalization | Units |
-|-------|--------------|---------|-------------|---------------|---|
+|-------|--------------|---------|-------------|---------------|----|
 | `particleFlux_vm_rN` | `RHSMode=1` solve outputs | Neoclassical particle flux in vm normalization (`rN` coordinate) | **Transport input** | `vm` flux normalization, reported on `rN` radial coordinate |
 | `heatFlux_vm_rN` | `RHSMode=1` solve outputs | Neoclassical heat flux in vm normalization (`rN` coordinate) | **Transport input** | `vm` flux normalization, reported on `rN` radial coordinate |
 | `particleFlux_vd_rN`, `heatFlux_vd_rN` | when `includePhi1=.true.` diagnostics are written | Total (magnetic + `E×B`) flux variants with `Phi1` effects | Transport input (Phi1-on workflows) | `vd` (drift + `E×B`) flux normalization, reported on `rN` |
