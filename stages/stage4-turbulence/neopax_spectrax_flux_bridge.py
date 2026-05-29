@@ -33,7 +33,6 @@ from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 import sys
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import Any
 
 import h5py
@@ -1205,58 +1204,57 @@ def cmd_run(args: argparse.Namespace) -> int:
             env["OMP_NUM_THREADS"] = str(int(args.threads_per_run))
         return env
 
-    with ThreadPoolExecutor(max_workers=max_parallel) as _unused:
-        while pending or active:
-            while pending and len(active) < max_parallel:
-                slot = len(active)
-                run_idx = pending.pop(0)
-                env = _env_for_slot(slot)
-                proc = _launch_subprocess(
-                    manifest_path=manifest_path,
-                    index=run_idx,
-                    env_overrides=env,
-                    verbose_workers=bool(getattr(args, "verbose_workers", False)),
-                )
-                active[proc] = (proc, run_idx, env)
-                where = env.get("CUDA_VISIBLE_DEVICES", f"cpu x{env.get('OMP_NUM_THREADS', '1')}")
-                print(f"started run {run_idx} on {where} ({completed}/{total} completed)")
+    while pending or active:
+        while pending and len(active) < max_parallel:
+            slot = len(active)
+            run_idx = pending.pop(0)
+            env = _env_for_slot(slot)
+            proc = _launch_subprocess(
+                manifest_path=manifest_path,
+                index=run_idx,
+                env_overrides=env,
+                verbose_workers=bool(getattr(args, "verbose_workers", False)),
+            )
+            active[proc] = (proc, run_idx, env)
+            where = env.get("CUDA_VISIBLE_DEVICES", f"cpu x{env.get('OMP_NUM_THREADS', '1')}")
+            print(f"started run {run_idx} on {where} ({completed}/{total} completed)")
 
-            if not active:
-                break
+        if not active:
+            break
 
-            done = []
-            for proc, run_idx, env in list(active.values()):
-                rc = proc.poll()
-                if rc is None:
-                    continue
+        done = []
+        for proc, run_idx, env in list(active.values()):
+            rc = proc.poll()
+            if rc is None:
+                continue
+            if bool(getattr(args, "verbose_workers", False)):
+                stdout = ""
+                stderr = ""
+            else:
+                stdout, stderr = proc.communicate()
+            if rc == 0:
+                completed += 1
                 if bool(getattr(args, "verbose_workers", False)):
-                    stdout = ""
-                    stderr = ""
+                    print(f"completed run {run_idx} ({completed}/{total})")
                 else:
-                    stdout, stderr = proc.communicate()
-                if rc == 0:
-                    completed += 1
-                    if bool(getattr(args, "verbose_workers", False)):
-                        print(f"completed run {run_idx} ({completed}/{total})")
-                    else:
-                        line = stdout.strip().splitlines()[-1] if stdout.strip() else ""
-                        print(f"completed run {run_idx} ({completed}/{total}): {line}")
-                else:
-                    failures += 1
-                    print(f"run {run_idx} failed with code {rc} ({completed}/{total} completed)")
-                    if stdout.strip():
-                        print(stdout.strip())
-                    if stderr.strip():
-                        print(stderr.strip())
-                done.append(proc)
-            for proc in done:
-                active.pop(proc, None)
+                    line = stdout.strip().splitlines()[-1] if stdout.strip() else ""
+                    print(f"completed run {run_idx} ({completed}/{total}): {line}")
+            else:
+                failures += 1
+                print(f"run {run_idx} failed with code {rc} ({completed}/{total} completed)")
+                if stdout.strip():
+                    print(stdout.strip())
+                if stderr.strip():
+                    print(stderr.strip())
+            done.append(proc)
+        for proc in done:
+            active.pop(proc, None)
 
-            if active and not done:
-                wait_timeout = float(args.poll_interval)
-                import time
+        if active and not done:
+            wait_timeout = float(args.poll_interval)
+            import time
 
-                time.sleep(wait_timeout)
+            time.sleep(wait_timeout)
 
     if failures:
         print(f"{failures} runs failed")
