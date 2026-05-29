@@ -7,6 +7,10 @@
 
 - [ ] Add more details for each software, e.g. for Spectrax-gk's `omega_t` what are units, what is it normalized to (gyro freq, etc), scale lengths. 
 
+## Code Quality / Tooling
+
+- [ ] No type checker is configured, so the type hints being added across the codebase (e.g. `stages/stage4-turbulence/spectrax_gk_radial_scan.py`) are unverified. Adding one (e.g. `ty`, mypy, or pyright) to CI and/or pre-commit would catch incorrect annotations. Raised on PR #78; deferred to a future PR.
+
 ## Stage 1 -- Equilibrium
 
 - [ ] vmec/vmec_jax and DESC do not have directly compatible inputs; an adapter or input translation layer will be needed to support both implementations behind the same pipeline entry point
