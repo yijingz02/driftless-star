@@ -1,11 +1,81 @@
 # StellaForge MVP pipeline configuration.
-# CLI overrides win: `snakemake --config key=value` beats any value here.
+# CLI overrides `snakemake --config key=value` beat any value here.
 
 # Equilibrium / run identifier.
 run_name: HSX_vacuum_ns201_quickrun
 
-# Stage 3 neoclassical backend. One of: sfincs_jax, sfincs_fortran.
-stage3_backend: sfincs_jax
-
 # Container runtime device. One of: cpu, gpu.
 device: cpu
+
+# Stage input/output directories used to construct pipeline file contracts.
+directories:
+  stage1_input: stages/stage1-equilibrium/input
+  stage1_output: stages/stage1-equilibrium/output
+  stage2_output: stages/stage2-boozer/output
+  stage3_input: stages/stage3-neoclassical/input
+  stage3_output: stages/stage3-neoclassical/output/{run_name}
+  stage4_input: stages/stage4-turbulence/input
+  stage4_output: stages/stage4-turbulence/output/{run_name}
+  stage5_input: stages/stage5-transport/input
+  stage5_output: stages/stage5-transport/output/{run_name}
+
+filenames:
+  s1_input: input.{run_name}
+  s1_output: wout_{run_name}.nc
+  s2_output: boozmn_{run_name}.nc
+  s3_config: input.{run_name}
+  s3_output: sfincs_jax_flux_profiles.h5
+  s4_config: "{run_name}.toml"
+  s4_output: neopax_fluxes.h5
+  s5_config: Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
+  s5_output: transport_solution.h5
+
+# Stage 3 SFINCS (sfincs_jax) radial scan.
+stage3:
+  sfincs_jax:
+    # --- Profile source ---
+    profiles_source: analytical
+    neopax_result: null
+
+    # --- Resolution ---
+    ntheta: 5
+    nzeta: 11
+    nxi: 12
+    nx: 4
+    solver_tolerance: 1.0e-6
+
+    # --- Parallelism ---
+    max_parallel: 1
+    # Used only when `device: gpu`.
+    gpu_ids: "0"
+
+    # --- Toggles ---
+    plot: true
+    verbose_workers: true
+
+# Stage 4 SPECTRAX-GK radial scan.
+stage4:
+  spectrax_gk:
+    # --- Profile source ---
+    profiles_source: analytical
+    neopax_result: null
+
+    # --- Resolution / time window ---
+    nx: 12
+    ny: 12
+    ntheta: 30
+    t_max: 10.0
+    average_window: 1.0
+    sample_stride: 50
+    diagnostics_stride: 1
+
+    # --- Parallelism ---
+    max_parallel: 1
+    # Used only when `device: gpu`.
+    gpu_ids: "0"
+
+    # --- Toggles ---
+    plot: true
+    plot_run_heat_traces: true
+    verbose_workers: true
+    collect_even_if_failures: true

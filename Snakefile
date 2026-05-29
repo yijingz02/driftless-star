@@ -1,14 +1,18 @@
 # StellaForge MVP Snakemake workflow
 
+from src import stage3, stage4, stage5
+
 configfile: "config.yaml"
 
-RUN_NAME       = config["run_name"]
-STAGE3_BACKEND = config["stage3_backend"]
-if STAGE3_BACKEND not in ("sfincs_jax", "sfincs_fortran"):
-    raise ValueError(
-        f"config['stage3_backend'] must be 'sfincs_jax' or 'sfincs_fortran', "
-        f"got {STAGE3_BACKEND!r}."
-    )
+RUN_NAME = config["run_name"]
+# Substitute {run_name} into each directory value; literal paths pass through unchanged.
+DIRS = {k: v.format(run_name=RUN_NAME) for k, v in config["directories"].items()}
+FILES = config["filenames"]
+
+
+# Substitute {run_name} into the filename for `key`; literal names pass through unchanged.
+def filename(key):
+    return FILES[key].format(run_name=RUN_NAME)
 
 DEVICE = config.get("device", "cpu")
 if DEVICE not in ("cpu", "gpu"):
@@ -16,12 +20,12 @@ if DEVICE not in ("cpu", "gpu"):
         f"config['device'] must be 'cpu' or 'gpu', got {DEVICE!r}."
     )
 
-GPU_FLAG           = "--gpus all " if DEVICE == "gpu" else ""
-STAGE1_IMG         = f"ghcr.io/rkhashmani/stellaforge:stage-1-vmec-{DEVICE}"
-STAGE2_IMG         = f"ghcr.io/rkhashmani/stellaforge:stage-2-booz-jax-{DEVICE}"
-STAGE3_JAX_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-3-sfincs-{DEVICE}"
-STAGE3_FORTRAN_IMG = "ghcr.io/rkhashmani/stellaforge:stage-3-sfincs-fortran-cpu"  # no -gpu build published
-STAGE4_IMG         = f"ghcr.io/rkhashmani/stellaforge:stage-4-spectrax-{DEVICE}"
+GPU_FLAG       = "--gpus all " if DEVICE == "gpu" else ""
+STAGE1_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-1-vmec-{DEVICE}"
+STAGE2_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-2-booz-jax-{DEVICE}"
+STAGE3_JAX_IMG = f"ghcr.io/rkhashmani/stellaforge:stage-3-sfincs-{DEVICE}"
+STAGE4_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-4-spectrax-{DEVICE}"
+STAGE5_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-5-neopax-{DEVICE}"
 
 # --user: make bind-mounted writes host-owned (Linux docker otherwise writes as root).
 # -e HOME=/tmp: pixi activation needs a writable HOME after dropping root.
@@ -32,71 +36,116 @@ DOCKER_PREFIX = (
     '-v "$PWD:/work" -w /work'
 )
 
-# Terminal artifacts of the MVP forward pass. When Stage 5 (NEOPAX) lands,
-# this list collapses to the single (or multiple) final Stage 5 output(s); Stages 2-4 outputs
-# become transitive intermediates and drop out of `rule all`.
+shell.executable("bash")
+# Propagate failures through `cmd | tee {log}` pipelines so a crashed stage
+# does not look successful just because tee exited 0.
+shell.prefix("set -o pipefail; ")
+
+S1_INPUT  = f"{DIRS['stage1_input']}/{filename('s1_input')}"
+S1_OUTPUT = f"{DIRS['stage1_output']}/{filename('s1_output')}"
+S2_OUTPUT = f"{DIRS['stage2_output']}/{filename('s2_output')}"
+
+STAGE3_CFG = config["stage3"]["sfincs_jax"]
+S3_CONFIG  = f"{DIRS['stage3_input']}/{filename('s3_config')}"
+S3_OUTPUT  = f"{DIRS['stage3_output']}/{filename('s3_output')}"
+
+STAGE4_CFG = config["stage4"]["spectrax_gk"]
+S4_CONFIG  = f"{DIRS['stage4_input']}/{filename('s4_config')}"
+S4_OUTPUT  = f"{DIRS['stage4_output']}/{filename('s4_output')}"
+
+S5_CONFIG  = f"{DIRS['stage5_input']}/{filename('s5_config')}"
+S5_OUTPUT  = f"{DIRS['stage5_output']}/{filename('s5_output')}"
+
+stage5.prepare_neopax_config(
+    s5_config=S5_CONFIG,
+    s5_output_dir=DIRS["stage5_output"],
+    s1_output=S1_OUTPUT,
+    s2_output=S2_OUTPUT,
+    s3_output=S3_OUTPUT,
+    s4_output=S4_OUTPUT,
+)
+
+
+# Terminal artifact of the MVP forward pass.
 rule all:
     input:
-        f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc",
-        "stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5",
-        "stages/stage4-turbulence/output/hsx_run_quickrun.summary.json",
-        "stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv",
+        S5_OUTPUT,
 
 rule stage1_vmec:
-    input:  f"stages/stage1-equilibrium/input/input.{RUN_NAME}"
-    output: f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc"
+    input:  S1_INPUT
+    output: S1_OUTPUT
+    log:    f"{DIRS['stage1_output']}/{RUN_NAME}.log"
     shell:
         f"{DOCKER_PREFIX} {STAGE1_IMG} "
-        "vmec_jax {input} --outdir stages/stage1-equilibrium/output"
+        f"vmec_jax {{input}} --outdir {DIRS['stage1_output']}"
+        " 2>&1 | tee {log}"
 
 rule stage2_boozer:
-    input:  f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc"
-    output: f"stages/stage2-boozer/output/boozmn_{RUN_NAME}.nc"
+    input:  S1_OUTPUT
+    output: S2_OUTPUT
+    log:    f"{DIRS['stage2_output']}/{RUN_NAME}.log"
     shell:
         f"{DOCKER_PREFIX} {STAGE2_IMG} "
         "python stages/stage2-boozer/run_boozer.py --wout {input} --output {output}"
+        " 2>&1 | tee {log}"
 
 rule stage3_sfincs:
     input:
-        namelist = f"stages/stage3-neoclassical/input/input.{RUN_NAME}",
-        wout     = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
+        config_file = S3_CONFIG,
+        wout        = S1_OUTPUT,
+        neopax_config = S5_CONFIG,
     output:
-        "stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5",
-    run:
-        if STAGE3_BACKEND == "sfincs_jax":
-            shell(
-                f"{DOCKER_PREFIX} {STAGE3_JAX_IMG} "
-                "sfincs_jax {input.namelist} "
-                "--out stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5 "
-                "--wout-path {input.wout}"
-            )
-        else:  # sfincs_fortran
-            shell(
-                f"{DOCKER_PREFIX} {STAGE3_FORTRAN_IMG} "
-                'sh -c "mkdir -p stages/stage3-neoclassical/output && '
-                "cp {input.namelist} stages/stage3-neoclassical/output/input.namelist && "
-                'cd stages/stage3-neoclassical/output && sfincs"'
-            )
+        S3_OUTPUT,
+    log:
+        f"{DIRS['stage3_output']}/{RUN_NAME}.log"
+    shell:
+        stage3.radial_scan_cmd(
+            docker_prefix=DOCKER_PREFIX,
+            image=STAGE3_JAX_IMG,
+            stage_cfg=STAGE3_CFG,
+            output_dir=DIRS["stage3_output"],
+            device=DEVICE,
+        ) + " 2>&1 | tee {log}"
 
-# eik_cache is geometry derived from wout; delete it before each rerun so
-# spectrax-gk regenerates from the current wout rather than reusing stale cache.
 rule stage4_spectrax:
     input:
-        toml = "stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml",
-        wout = f"stages/stage1-equilibrium/output/wout_{RUN_NAME}.nc",
+        config_file = S4_CONFIG,
+        wout        = S1_OUTPUT,
+        boozer      = S2_OUTPUT,
+        neopax_config = S5_CONFIG,
     output:
-        summary     = "stages/stage4-turbulence/output/hsx_run_quickrun.summary.json",
-        diagnostics = "stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv",
-        eik_cache   = f"stages/stage4-turbulence/output/wout_{RUN_NAME}.eik.nc",
+        S4_OUTPUT,
+    log:
+        f"{DIRS['stage4_output']}/{RUN_NAME}.log"
     shell:
-        "rm -f {output.eik_cache} && "
-        f"{DOCKER_PREFIX} {STAGE4_IMG} "
-        "spectrax-gk run --config {input.toml} "
-        "--out stages/stage4-turbulence/output/hsx_run_quickrun"
+        stage4.radial_scan_cmd(
+            docker_prefix=DOCKER_PREFIX,
+            image=STAGE4_IMG,
+            stage_cfg=STAGE4_CFG,
+            output_dir=DIRS["stage4_output"],
+            device=DEVICE,
+        ) + " 2>&1 | tee {log}"
+
+rule stage5_neopax:
+    input:
+        config_file = S5_CONFIG,
+        wout    = S1_OUTPUT,
+        boozer  = S2_OUTPUT,
+        neo_h5  = S3_OUTPUT,
+        turb_h5 = S4_OUTPUT,
+    output:
+        S5_OUTPUT,
+    log:
+        f"{DIRS['stage5_output']}/{RUN_NAME}.log"
+    shell:
+        f"{DOCKER_PREFIX} {STAGE5_IMG} "
+        f"sh -c \"cd {DIRS['stage5_input']} && neopax {filename('s5_config')}\""
+        " 2>&1 | tee {log}"
 
 rule clean:
     shell:
-        """
-        rm -rf stages/stage1-equilibrium/output stages/stage2-boozer/output \
-               stages/stage3-neoclassical/output stages/stage4-turbulence/output
+        f"""
+        rm -rf {DIRS['stage1_output']} {DIRS['stage2_output']} \
+               {DIRS['stage3_output']} {DIRS['stage4_output']} \
+               {DIRS['stage5_output']}
         """
