@@ -33,11 +33,6 @@ er_ambipolar_tol = 1.0e-6
 er_ambipolar_x_tol = 1.0e-6
 er_ambipolar_maxiter = 12
 er_ambipolar_blocksize = 1
-er_ambipolar_overlay_reference_er = true
-er_ambipolar_reference_er_file = "./examples/inputs/NTSS_Test_Initial_scaled_flux.h5"
-er_ambipolar_reference_er_label = "reference Er"
-er_ambipolar_plot = true
-er_ambipolar_output_dir = "./outputs/my_ambipolarity_run_scaled_flux"
 er_initialization_preprocess_boundary_state = false
 
 
@@ -147,7 +142,6 @@ temperature_convection_reconstruction = "closure_face_flux"
 temperature_heat_flux_reconstruction = "closure_face_flux"
 
 Er_source_mode = "ambipolar_local"
-work_source_mode = "local"
 Er_relax = 0.1
 DEr = 2.0
 Er_permittivity_mode = "ntss_like_midpoint"
