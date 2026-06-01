@@ -1,0 +1,68 @@
+_wandb:
+    value:
+        cli_version: 0.27.0
+        e:
+            0vfa7bqkauex8wqkia4gbgrn71nniuql:
+                args:
+                    - --run-name
+                    - HSX_vacuum_ns201_quickrun
+                codePath: tests/stage4-turbulence/SPECTRAX-GK/log_wandb_stage4.py
+                codePathLocal: tests/stage4-turbulence/SPECTRAX-GK/log_wandb_stage4.py
+                email: zhangyijing2002@gmail.com
+                executable: /opt/anaconda3/envs/Stellaforge/bin/python
+                git:
+                    commit: 98e64a25354e903cc73125f00e778d98e3fd3ecc
+                    remote: https://github.com/yijingz02/StellaForge.git
+                host: Itsukis-MacBook-Pro.local
+                os: macOS-15.7.4-arm64-arm-64bit
+                program: /Users/itsuki/Desktop/PhD/Research/StellaForge/tests/stage4-turbulence/SPECTRAX-GK/log_wandb_stage4.py
+                python: CPython 3.10.20
+                root: /Users/itsuki/Desktop/PhD/Research/StellaForge
+                startedAt: "2026-06-01T09:00:50.610954Z"
+                writerId: 0vfa7bqkauex8wqkia4gbgrn71nniuql
+        m: []
+        python_version: 3.10.20
+        t:
+            "3":
+                - 2
+                - 13
+                - 15
+                - 16
+                - 62
+            "4": 3.10.20
+            "5": 0.27.0
+            "12": 0.27.0
+            "13": darwin-arm64
+electron_model:
+    value: adiabatic
+geometry:
+    value:
+        a_minor: 0.12150780545936427
+        alpha: 0
+        geometry_backend: internal
+        model: vmec
+        npol: 1
+grid:
+    value:
+        Lx: 62.8
+        Ly: 62.8
+        Nx: 12
+        Ny: 12
+        Nz: 16
+        boundary: fix aspect
+        nperiod: 1
+        ntheta: 30
+        y0: 21
+n_runs:
+    value: 4
+output_dir:
+    value: /Users/itsuki/Desktop/PhD/Research/StellaForge/stages/stage4-turbulence/output/HSX_vacuum_ns201_quickrun
+output_root:
+    value: /Users/itsuki/Desktop/PhD/Research/StellaForge/stages/stage4-turbulence/output
+run:
+    value:
+        Nl: 4
+        Nm: 8
+        ky: 0.047619047619047616
+run_name:
+    value: HSX_vacuum_ns201_quickrun
