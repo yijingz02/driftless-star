@@ -1,4 +1,4 @@
-# StellaForge MVP Snakemake workflow
+# driftless-star MVP Snakemake workflow
 
 from src import stage3, stage4, stage5
 

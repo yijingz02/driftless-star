@@ -231,7 +231,7 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## W&B Tracking
 
-**Project:** `stellaforge-stage3-neoclassical`
+**Project:** `driftless-star-stage3-neoclassical`
 
 > [!TODO]
 > Set up W&B tracking for all three sub-stages.

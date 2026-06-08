@@ -321,19 +321,19 @@ The alternate file is *layered on top of* `config.yaml`, not a replacement — l
 SVG:
 
 ```
-pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tsvg > ./stellaforge_filegraph.svg'
+pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tsvg > ./driftless-star_filegraph.svg'
 ```
 
 PDF:
 
 ```
-pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpdf > ./stellaforge_filegraph.pdf'
+pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpdf > ./driftless-star_filegraph.pdf'
 ```
 
 PNG:
 
 ```
-pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpng -Gdpi=150 > ./stellaforge_filegraph.png'
+pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpng -Gdpi=150 > ./driftless-star_filegraph.png'
 ```
 
 

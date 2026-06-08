@@ -231,7 +231,7 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## W&B Tracking
 
-**Project:** `stellaforge-stage4-turbulence`
+**Project:** `driftless-star-stage4-turbulence`
 
 > [!TODO]
 > Set up W&B tracking.

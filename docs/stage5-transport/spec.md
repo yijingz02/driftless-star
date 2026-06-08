@@ -262,7 +262,7 @@ Reference: `stellarator_workflow.tex`, Sections 4.8--4.9.
 ## API Documentation
 
 > [!TODO]
-> Document Python APIs for NEOPAX and Trinity3D, including the StellaForge adapter interface and example call sequences.
+> Document Python APIs for NEOPAX and Trinity3D, including the driftless-star adapter interface and example call sequences.
 
 ---
 
@@ -280,7 +280,7 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## W&B Tracking
 
-**Project:** `stellaforge-stage5-transport`
+**Project:** `driftless-star-stage5-transport`
 
 > [!TODO]
 > Set up W&B tracking.

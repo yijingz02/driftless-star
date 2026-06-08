@@ -175,7 +175,7 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## W&B Tracking
 
-**Project:** `stellaforge-stage2-boozer`
+**Project:** `driftless-star-stage2-boozer`
 
 > [!TODO]
 > Document W&B metrics, artifacts, run naming, cross-code comparison dashboards, and Stage 1 integration.
