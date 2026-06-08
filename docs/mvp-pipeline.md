@@ -247,7 +247,7 @@ pixi install --manifest-path stages/pixi.toml --environment stage-5-neopax
 
 **Code:** [Snakemake](https://snakemake.readthedocs.io/) 
 
-Automates the MVP forward pass end-to-end: `Stage 1 -> {Stage 2, Stage 3, Stage 4}` with the three downstream stages fanning out in parallel off the Stage 1 wout. Each stage runs inside its pre-built GHCR container image (`ghcr.io/rkhashmani/stellaforge:stage-N-<code>-{cpu,gpu}`) via `docker run`, so no local Pixi install is required beyond the `pipeline` env itself.
+Automates the MVP forward pass end-to-end: `Stage 1 -> {Stage 2, Stage 3, Stage 4}` with the three downstream stages fanning out in parallel off the Stage 1 wout. Each stage runs inside its pre-built GHCR container image (`ghcr.io/driftless-star/driftless-star:stage-N-<code>-{cpu,gpu}`) via `docker run`, so no local Pixi install is required beyond the `pipeline` env itself.
 
 > [!NOTE]
 > Stage 5 (NEOPAX) is not yet orchestrated.

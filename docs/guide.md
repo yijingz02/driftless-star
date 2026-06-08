@@ -174,7 +174,7 @@ Each workspace has its own lockfile (`pixi.lock` / `stages/pixi.lock`).
 
 The Dockerfile uses a multi-stage build on a `ghcr.io/prefix-dev/pixi:noble` base image. See `stages/Dockerfile` for implementation details.
 
-**Container images** are published to GHCR at `ghcr.io/rkhashmani/stellaforge`. For MVP, the tags follow the pattern `stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). Apptainer container images are prefixed with `apptainer-`. CI builds all stage variants from the container image definition files using a GitHub Actions matrix. See `.github/workflows/containers.yml` and `.github/actions/build-docker/action.yml` for the CI setup.
+**Container images** are published to GHCR at `ghcr.io/driftless-star/driftless-star`. For MVP, the tags follow the pattern `stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). Apptainer container images are prefixed with `apptainer-`. CI builds all stage variants from the container image definition files using a GitHub Actions matrix. See `.github/workflows/containers.yml` and `.github/actions/build-docker/action.yml` for the CI setup.
 
 **Adding or updating a stage dependency:**
 1. Update `stages/pixi.toml` (add/change the dependency or git rev)

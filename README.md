@@ -123,7 +123,7 @@ git clone https://github.com/RKHashmani/StellaForge.git
 cd StellaForge
 git submodule update --init --recursive
 snakemake --sdm docker --configfile config.yaml
-docker pull ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu
+docker pull ghcr.io/driftless-star/driftless-star:stage-1-vmec-cpu
 -->
 
 ## License

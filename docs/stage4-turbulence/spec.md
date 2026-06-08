@@ -247,7 +247,7 @@ docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-4-spectrax s
 docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-4-spectrax-gpu --build-arg CUDA_VERSION=12 stages/  # GPU
 ```
 
-Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-4-spectrax-cpu` and `stage-4-spectrax-gpu`. CI builds via `.github/workflows/containers.yml`.
+Published to GHCR as `ghcr.io/driftless-star/driftless-star:stage-4-spectrax-cpu` and `stage-4-spectrax-gpu`. CI builds via `.github/workflows/containers.yml`.
 
 See [guide](../guide.md#container-architecture) for full architecture details.
 
