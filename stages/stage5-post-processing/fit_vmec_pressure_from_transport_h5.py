@@ -157,7 +157,7 @@ def _write_vmec_input_with_pressure_fit(
     return dst
 
 
-def _fit_from_args(args) -> tuple[np.ndarray, int | None]:
+def _fit_from_args(args) -> tuple[np.ndarray, int | None, int]:
     rho, total_pressure, resolved_index = _load_total_pressure(
         args.h5_path,
         time_index=int(args.time_index),
@@ -169,8 +169,12 @@ def _fit_from_args(args) -> tuple[np.ndarray, int | None]:
         s = s[1:]
         total_pressure = total_pressure[1:]
 
-    coeffs = _fit_power_series(s, total_pressure, degree=int(args.degree))
-    return coeffs, resolved_index
+    # A degree-d power series has d+1 coefficients and needs at least d+1 sample
+    # points to be well-posed. Clamp the effective degree to the number of points 
+    # minus one so the fit stays well-conditioned regardless of the radial resolution.
+    effective_degree = min(int(args.degree), s.size - 1)
+    coeffs = _fit_power_series(s, total_pressure, degree=effective_degree)
+    return coeffs, resolved_index, effective_degree
 
 
 def main() -> None:
@@ -212,7 +216,7 @@ def main() -> None:
     if args.command is None:
         args.command = "fit"
 
-    coeffs, resolved_index = _fit_from_args(args)
+    coeffs, resolved_index, effective_degree = _fit_from_args(args)
 
     if args.command == "write-input":
         out_path = _write_vmec_input_with_pressure_fit(
@@ -223,7 +227,8 @@ def main() -> None:
         print(f"# wrote_vmec_input: {out_path}")
 
     print(f"# input: {args.h5_path}")
-    print(f"# degree: {int(args.degree)}")
+    print(f"# requested_degree: {int(args.degree)}")
+    print(f"# effective_degree: {effective_degree}")
     if resolved_index is not None:
         print(f"# resolved_time_index: {resolved_index}")
     else:
