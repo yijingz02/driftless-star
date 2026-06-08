@@ -12,5 +12,8 @@ snakemake-minimal = ">=8,<10"
 graphviz = ">=9,<15"
 pytest = ">=8,<9"
 
+[feature.pipeline.tasks.begin_loop]
+cmd = "python -m src.loop"
+
 [environments]
 pipeline = { features = ["pipeline"], no-default-feature = true }

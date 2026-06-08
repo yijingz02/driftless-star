@@ -211,6 +211,7 @@ __marimo__/
 # StellaForge: runtime stage outputs (Snakemake regenerates these in place;
 # tracking them would make every pipeline run a noisy git diff)
 stages/stage*/output/
+stages/loop-output/
 
 # StellaForge: ad-hoc stage inputs (the tracked _quickrun baselines are
 # unaffected; this ignores additional experiment-specific inputs)
