@@ -205,13 +205,13 @@ __marimo__/
 # Apptainer
 *.sif
 
-# StellaForge: Snakemake workflow metadata (dag cache, run history, shadow dirs)
+# driftless-star: Snakemake workflow metadata (dag cache, run history, shadow dirs)
 .snakemake/
 
-# StellaForge: runtime stage outputs (Snakemake regenerates these in place;
+# driftless-star: runtime stage outputs (Snakemake regenerates these in place;
 # tracking them would make every pipeline run a noisy git diff)
 stages/stage*/output/
 
-# StellaForge: ad-hoc stage inputs (the tracked _quickrun baselines are
+# driftless-star: ad-hoc stage inputs (the tracked _quickrun baselines are
 # unaffected; this ignores additional experiment-specific inputs)
 stages/stage*/input/

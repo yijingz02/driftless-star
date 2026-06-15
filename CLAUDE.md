@@ -1,17 +1,17 @@
 # CLAUDE.md
 
-Project-level instructions for AI assistants working in the StellaForge repository.
+Project-level instructions for AI assistants working in the driftless-star repository.
 This is the single source of truth for all coding standards.
 
 ---
 
-## Part 1: StellaForge Project
+## Part 1: driftless-star Project
 
 ### Project Description
 
-StellaForge is an open-source pipeline for stellarator design, connecting five physics stages (equilibrium, Boozer transform, neoclassical transport, turbulence, and profile evolution) into a single reproducible workflow. The current goal is a working forward pass: from boundary Fourier coefficients and profile guesses through to transport-consistent profiles and fusion-power metrics. The pipeline is designed to be closed-loop, so output profiles can eventually feed back to Stage 1 for iterative optimization.
+driftless-star is an open-source pipeline for stellarator design, connecting five physics stages (equilibrium, Boozer transform, neoclassical transport, turbulence, and profile evolution) into a single reproducible workflow. The current goal is a working forward pass: from boundary Fourier coefficients and profile guesses through to transport-consistent profiles and fusion-power metrics. The pipeline is designed to be closed-loop, so output profiles can eventually feed back to Stage 1 for iterative optimization.
 
-StellaForge is a **recipe repo**: it contains environment definitions, container builds, and orchestration logic, but the upstream solver codes are installed as dependencies. The companion `stellarator_workflow/` submodule contains TeX manuscripts defining the physics equations and I/O contracts. See `docs/guide.md` for the full pipeline design and contributor workflow.
+driftless-star is a **recipe repo**: it contains environment definitions, container builds, and orchestration logic, but the upstream solver codes are installed as dependencies. The companion `stellarator_workflow/` submodule contains TeX manuscripts defining the physics equations and I/O contracts. See `docs/guide.md` for the full pipeline design and contributor workflow.
 
 ### The 5 Pipeline Stages
 
@@ -34,8 +34,8 @@ Forward-pass chain: `vmec_jax` -> `booz_xform_jax` -> `sfincs_jax` -> `SPECTRAX-
 
 - Stage directories: `stage{N}-{name}` (e.g., `stage1-equilibrium`)
 - Per-stage data subdirectories (under `stages/stage{N}-{name}/`): `input/` (when applicable) and `output/` are tracked. They contain reduced-accuracy `_quickrun` smoke-test artifacts so a fresh clone is immediately runnable. Snakemake reruns overwrite `output/` in place; `git diff` makes any drift auditable.
-- Container images: `ghcr.io/rkhashmani/stellaforge:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`) (on GHCR)
-- W&B projects: `stellaforge-stage{N}-{name}`
+- Container images: `ghcr.io/driftless-star/driftless-star:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`) (on GHCR)
+- W&B projects: `driftless-star-stage{N}-{name}`
 - Output directories: `{run_dir}/stage{N}_{name}/`
 - Test files: mirror source structure in `tests/`
 
@@ -202,12 +202,12 @@ Snakemake rules define which files connect which stages. Each stage's `spec.md` 
 - Add `.dockerignore` to exclude unnecessary files from the build context.
 - Keep Dockerfiles minimal -- install only production dependencies.
 
-**StellaForge container architecture** (see `docs/guide.md#container-architecture` for full details):
+**driftless-star container architecture** (see `docs/guide.md#container-architecture` for full details):
 - The repo has two Pixi workspaces with decoupled responsibilities:
   - Root `pixi.toml` defines a single `pipeline` environment (`snakemake-minimal`, `graphviz`, `pytest`) for orchestration. Snakemake runs on the execution node directly -- it is never containerized, because nesting containers is fragile and not widely supported.
   - `stages/pixi.toml` defines the per-stage physics environments. These are only ever consumed by the container builder, so they are isolated from the orchestration env.
 - A single templated `stages/Dockerfile` builds all stage images using `ghcr.io/prefix-dev/pixi:noble` as the base. The docker build context is `stages/`, and build arguments (`ENVIRONMENT`, `CUDA_VERSION`) select the target stage and GPU support.
-- Container images are published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). CI builds all stage variants from `stages/Dockerfile` using a GitHub Actions matrix.
+- Container images are published to GHCR as `ghcr.io/driftless-star/driftless-star:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). CI builds all stage variants from `stages/Dockerfile` using a GitHub Actions matrix.
 - Source-built upstream packages are pinned to exact git commit SHAs in `stages/pixi.toml`.
 
 ### Performance & Memory Management

@@ -175,7 +175,7 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## W&B Tracking
 
-**Project:** `stellaforge-stage2-boozer`
+**Project:** `driftless-star-stage2-boozer`
 
 > [!TODO]
 > Document W&B metrics, artifacts, run naming, cross-code comparison dashboards, and Stage 1 integration.
@@ -190,7 +190,7 @@ See `docs/mvp-pipeline.md` for full I/O details.
 docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-2-booz stages/  # CPU
 ```
 
-Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-2-booz-cpu`.
+Published to GHCR as `ghcr.io/driftless-star/driftless-star:stage-2-booz-cpu`.
 
 **`booz_xform_jax`:** Built from the single templated `stages/Dockerfile` using build arguments:
 
@@ -199,7 +199,7 @@ docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-2-booz-jax s
 docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-2-booz-jax-gpu --build-arg CUDA_VERSION=12 stages/  # GPU
 ```
 
-Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-2-booz-jax-cpu` and `stage-2-booz-jax-gpu`. CI builds via `.github/workflows/containers.yml`.
+Published to GHCR as `ghcr.io/driftless-star/driftless-star:stage-2-booz-jax-cpu` and `stage-2-booz-jax-gpu`. CI builds via `.github/workflows/containers.yml`.
 
 See [guide](../guide.md#container-architecture) for full architecture details.
 

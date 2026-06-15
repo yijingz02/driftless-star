@@ -1,4 +1,4 @@
-# StellaForge MVP Snakemake workflow
+# driftless-star MVP Snakemake workflow
 
 from src import stage3, stage4, stage5
 
@@ -21,11 +21,11 @@ if DEVICE not in ("cpu", "gpu"):
     )
 
 GPU_FLAG       = "--gpus all " if DEVICE == "gpu" else ""
-STAGE1_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-1-vmec-{DEVICE}"
-STAGE2_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-2-booz-jax-{DEVICE}"
-STAGE3_JAX_IMG = f"ghcr.io/rkhashmani/stellaforge:stage-3-sfincs-{DEVICE}"
-STAGE4_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-4-spectrax-{DEVICE}"
-STAGE5_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-5-neopax-{DEVICE}"
+STAGE1_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-1-vmec-{DEVICE}"
+STAGE2_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-2-booz-jax-{DEVICE}"
+STAGE3_JAX_IMG = f"ghcr.io/driftless-star/driftless-star:stage-3-sfincs-{DEVICE}"
+STAGE4_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-4-spectrax-{DEVICE}"
+STAGE5_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-5-neopax-{DEVICE}"
 
 # --user: make bind-mounted writes host-owned (Linux docker otherwise writes as root).
 # -e HOME=/tmp: pixi activation needs a writable HOME after dropping root.

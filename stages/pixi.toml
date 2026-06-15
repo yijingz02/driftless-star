@@ -1,6 +1,6 @@
 [workspace]
 channels = ["conda-forge"]
-name = "stellaforge-stages"
+name = "driftless-star-stages"
 platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
 version = "0.1.0"
 
