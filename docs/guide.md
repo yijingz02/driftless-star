@@ -1,8 +1,8 @@
-# StellaForge Guide
+# driftless-star Guide
 
 ## Project Overview
 
-StellaForge implements the stellarator design workflow described in the companion `stellarator_workflow/` submodule as a containerized, orchestrated software pipeline. The physics and I/O contracts are defined in two TeX manuscripts:
+driftless-star implements the stellarator design workflow described in the companion `stellarator_workflow/` submodule as a containerized, orchestrated software pipeline. The physics and I/O contracts are defined in two TeX manuscripts:
 - `stellarator_workflow.tex` -- governing equations and code-by-code details
 - `stellarator_io_reference.tex` -- input/output contracts and handoff specifications
 
@@ -60,8 +60,8 @@ The pipeline should eventually support config-driven implementation swapping. Po
 
 1. Clone the repository and initialize submodules:
    ```bash
-   git clone https://github.com/RKHashmani/StellaForge.git
-   cd StellaForge
+   git clone https://github.com/driftless-star/driftless-star.git
+   cd driftless-star
    git submodule update --init --recursive
    ```
 
@@ -134,7 +134,7 @@ Work through these steps in order. Each step should result in updates to the sta
 > Set up W&B tracking once stages are operational.
 
 Conventions:
-- **Project name:** `stellaforge-stage{N}-{name}` (e.g., `stellaforge-stage1-equilibrium`)
+- **Project name:** `driftless-star-stage{N}-{name}` (e.g., `driftless-star-stage1-equilibrium`)
 - **Run naming:** `{code}_{config}_{timestamp}` (e.g., `vmec_jax_qa_2026-04-01T12:00`)
 - **Metrics to log:** Stage-specific convergence metrics, runtime, key physics outputs (see the spec for guidance)
 - Create a dashboard with the most important panels for the stage
@@ -158,7 +158,7 @@ Place skills in the stage's docs directory (e.g., `docs/stage1-equilibrium/skill
 After Phase 1 is complete for a stage, move to containerization and testing.
 ### Container Architecture
 
-StellaForge is a **recipe repo**: it contains everything needed to build and run the containerized pipeline, but does not contain the upstream solver code itself.
+driftless-star is a **recipe repo**: it contains everything needed to build and run the containerized pipeline, but does not contain the upstream solver code itself.
 
 **Two decoupled Pixi workspaces.** The repo splits dependency management along the orchestration / physics boundary:
 - **Root `pixi.toml`** -- a single `pipeline` environment (`snakemake-minimal`, `graphviz`, `pytest`). Installed directly on the execution node; Snakemake is never containerized because nested containers are fragile and not widely supported on shared compute.
@@ -174,7 +174,7 @@ Each workspace has its own lockfile (`pixi.lock` / `stages/pixi.lock`).
 
 The Dockerfile uses a multi-stage build on a `ghcr.io/prefix-dev/pixi:noble` base image. See `stages/Dockerfile` for implementation details.
 
-**Container images** are published to GHCR at `ghcr.io/rkhashmani/stellaforge`. For MVP, the tags follow the pattern `stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). Apptainer container images are prefixed with `apptainer-`. CI builds all stage variants from the container image definition files using a GitHub Actions matrix. See `.github/workflows/containers.yml` and `.github/actions/build-docker/action.yml` for the CI setup.
+**Container images** are published to GHCR at `ghcr.io/driftless-star/driftless-star`. For MVP, the tags follow the pattern `stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). Apptainer container images are prefixed with `apptainer-`. CI builds all stage variants from the container image definition files using a GitHub Actions matrix. See `.github/workflows/containers.yml` and `.github/actions/build-docker/action.yml` for the CI setup.
 
 **Adding or updating a stage dependency:**
 1. Update `stages/pixi.toml` (add/change the dependency or git rev)
@@ -257,7 +257,7 @@ When integrating a new stage or implementation:
 > [!TODO]
 > Set up pipeline-level W&B aggregation.
 
-- **Project:** `stellaforge-pipeline`
+- **Project:** `driftless-star-pipeline`
 - Aggregate per-stage metrics, track implementation selections, total runtime, and final physics outputs (P_fus, Q, profiles).
 
 ## How to Document I/O

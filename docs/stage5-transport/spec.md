@@ -262,7 +262,7 @@ Reference: `stellarator_workflow.tex`, Sections 4.8--4.9.
 ## API Documentation
 
 > [!TODO]
-> Document Python APIs for NEOPAX and Trinity3D, including the StellaForge adapter interface and example call sequences.
+> Document Python APIs for NEOPAX and Trinity3D, including the driftless-star adapter interface and example call sequences.
 
 ---
 
@@ -280,7 +280,7 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## W&B Tracking
 
-**Project:** `stellaforge-stage5-transport`
+**Project:** `driftless-star-stage5-transport`
 
 > [!TODO]
 > Set up W&B tracking.
@@ -296,7 +296,7 @@ docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-5-neopax sta
 docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-5-neopax-gpu --build-arg CUDA_VERSION=12 stages/  # GPU
 ```
 
-Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-5-neopax-cpu` and `stage-5-neopax-gpu`. CI builds via `.github/workflows/containers.yml`.
+Published to GHCR as `ghcr.io/driftless-star/driftless-star:stage-5-neopax-cpu` and `stage-5-neopax-gpu`. CI builds via `.github/workflows/containers.yml`.
 
 See [guide](../guide.md#container-architecture) for full architecture details.
 

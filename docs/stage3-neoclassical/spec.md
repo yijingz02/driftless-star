@@ -231,7 +231,7 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## W&B Tracking
 
-**Project:** `stellaforge-stage3-neoclassical`
+**Project:** `driftless-star-stage3-neoclassical`
 
 > [!TODO]
 > Set up W&B tracking for all three sub-stages.
@@ -247,7 +247,7 @@ docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-3-sfincs sta
 docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-3-sfincs-gpu --build-arg CUDA_VERSION=12 stages/  # GPU
 ```
 
-Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-3-sfincs-cpu` and `stage-3-sfincs-gpu`. CI builds via `.github/workflows/containers.yml`.
+Published to GHCR as `ghcr.io/driftless-star/driftless-star:stage-3-sfincs-cpu` and `stage-3-sfincs-gpu`. CI builds via `.github/workflows/containers.yml`.
 
 See [guide](../guide.md#container-architecture) for full architecture details.
 

@@ -247,7 +247,7 @@ pixi install --manifest-path stages/pixi.toml --environment stage-5-neopax
 
 **Code:** [Snakemake](https://snakemake.readthedocs.io/) 
 
-Automates the MVP forward pass end-to-end: `Stage 1 -> {Stage 2, Stage 3, Stage 4}` with the three downstream stages fanning out in parallel off the Stage 1 wout. Each stage runs inside its pre-built GHCR container image (`ghcr.io/rkhashmani/stellaforge:stage-N-<code>-{cpu,gpu}`) via `docker run`, so no local Pixi install is required beyond the `pipeline` env itself.
+Automates the MVP forward pass end-to-end: `Stage 1 -> {Stage 2, Stage 3, Stage 4}` with the three downstream stages fanning out in parallel off the Stage 1 wout. Each stage runs inside its pre-built GHCR container image (`ghcr.io/driftless-star/driftless-star:stage-N-<code>-{cpu,gpu}`) via `docker run`, so no local Pixi install is required beyond the `pipeline` env itself.
 
 > [!NOTE]
 > Stage 5 (NEOPAX) is not yet orchestrated.
@@ -321,19 +321,19 @@ The alternate file is *layered on top of* `config.yaml`, not a replacement — l
 SVG:
 
 ```
-pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tsvg > ./stellaforge_filegraph.svg'
+pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tsvg > ./driftless-star_filegraph.svg'
 ```
 
 PDF:
 
 ```
-pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpdf > ./stellaforge_filegraph.pdf'
+pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpdf > ./driftless-star_filegraph.pdf'
 ```
 
 PNG:
 
 ```
-pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpng -Gdpi=150 > ./stellaforge_filegraph.png'
+pixi run -e pipeline bash -c 'snakemake --filegraph | dot -Tpng -Gdpi=150 > ./driftless-star_filegraph.png'
 ```
 
 

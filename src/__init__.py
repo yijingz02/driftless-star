@@ -1,1 +1,1 @@
-"""StellaForge workflow orchestration helpers."""
+"""driftless-star workflow orchestration helpers."""
