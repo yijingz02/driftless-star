@@ -134,7 +134,11 @@ def main() -> None:
         iter_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(p["s1_input"], iter_dir / p["s1_input"].name)
 
-        target = str(p["s5_signal"].relative_to(repo_root))
+        # Lets the output dir point outside the repository directory (e.g. an HTCondor scratch filesystem).
+        try:
+            target = str(p["s5_signal"].relative_to(repo_root))
+        except ValueError:
+            target = str(p["s5_signal"])
         run_forward_pass(target=target, run_name=run_name, cores=args.cores,
                          config_path=config_path, repo_root=repo_root)
 
