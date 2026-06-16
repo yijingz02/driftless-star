@@ -33,7 +33,7 @@ Forward-pass chain: `vmec_jax` -> `booz_xform_jax` -> `sfincs_jax` -> `SPECTRAX-
 ### Naming Conventions
 
 - Stage directories: `stage{N}-{name}` (e.g., `stage1-equilibrium`)
-- Per-stage data subdirectories (under `stages/stage{N}-{name}/`): `input/` (when applicable) and `output/` are tracked. They contain reduced-accuracy `_quickrun` smoke-test artifacts so a fresh clone is immediately runnable. Snakemake reruns overwrite `output/` in place; `git diff` makes any drift auditable.
+- Per-stage data subdirectories (under `stages/stage{N}-{name}/`): the committed `_quickrun` baseline **inputs** (e.g. `input.HSX_vacuum_ns201_quickrun`) are tracked so a fresh clone is immediately runnable. The `input/` and `output/` directories are otherwise gitignored: Snakemake regenerates `output/` in place on each rerun, and ad-hoc experiment-specific inputs stay untracked.
 - Container images: `ghcr.io/driftless-star/driftless-star:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`) (on GHCR)
 - W&B projects: `driftless-star-stage{N}-{name}`
 - Output directories: `{run_dir}/stage{N}_{name}/`

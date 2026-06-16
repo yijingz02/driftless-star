@@ -6,7 +6,7 @@
 ## Documentation
 
 - [ ] Add more details for each software, e.g. for Spectrax-gk's `omega_t` what are units, what is it normalized to (gyro freq, etc), scale lengths. 
-- [ ] Document the closed-loop driver design in the docs (it currently lives only in `src/loop.py`'s — now one-line — module docstring). Cover: each iteration is an independent Snakemake run with `run_name = {base}_iter_N`, which puts every stage — notably stages 3/4, which cache per-radius runs by output directory — in a fresh output tree so they recompute (a single `run_name` serves stale stage 3/4 fluxes after pass 1); iterations are chained by the fit (iteration N's fitted pressure seeds iteration N+1); the base input and per-stage templates are never mutated; convergence is a fixed `--max-iters` for now, with per-iteration `converge_status.json` as the stub seam for a "Stage 5 output unchanged" criterion. Target `docs/mvp-pipeline.md` (+ a note in `docs/guide.md`).
+- [ ] `docs/mvp-pipeline.md` per-stage I/O tables are stale relative to `config.yaml`: the Stage 3/4/5 output filenames (`sfincs_jax_flux_profiles.h5`, `neopax_fluxes.h5`, `transport_solution.h5`) and the per-`run_name` output subdirectories differ from the documented `sfincsOutput_quickrun.h5` / `hsx_run_quickrun.*` / `NEOPAX_output_quickrun.h5`. Refresh the per-stage tables (deferred from the closed-loop docs change, which only refreshed the Snakemake section).
 
 ## Code Quality / Tooling
 
