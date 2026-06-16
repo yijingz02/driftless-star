@@ -1,4 +1,4 @@
-"""Closed-loop driver"""
+"""Ouroboros: closed-loop driver (Stage 5 -> Stage 1 pressure feedback)."""
 
 from __future__ import annotations
 

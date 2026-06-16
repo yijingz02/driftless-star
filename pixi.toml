@@ -12,8 +12,8 @@ snakemake-minimal = ">=8,<10"
 graphviz = ">=9,<15"
 pytest = ">=8,<9"
 
-[feature.pipeline.tasks.begin_loop]
-cmd = "python -m src.loop"
+[feature.pipeline.tasks.ouroboros]
+cmd = "python -m src.ouroboros"
 
 [environments]
 pipeline = { features = ["pipeline"], no-default-feature = true }
