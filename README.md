@@ -118,6 +118,16 @@ Snakemake DAG, end-to-end tests, and publishing. Details in the [Guide](docs/gui
 > [!TODO]
 > Document pipeline usage once stages are operational.
 
+### Visualize the pipeline graph
+
+Render the file-flow graph (files as nodes, rules as edges) **including the closed-loop post-processing step** by targeting the convergence signal file:
+
+```
+pixi run -e pipeline bash -c 'snakemake --filegraph stages/stage5-post-processing/output/HSX_vacuum_ns201_quickrun/converge_status.json | dot -Tpdf > docs/figs/stellaforge_filegraph.pdf'
+```
+
+Omit the target to graph the plain forward pass (stops at Stage 5). Needs a one-time `pixi run -e pipeline dot -c`; see [docs/mvp-pipeline.md](docs/mvp-pipeline.md#visualizing-the-file-flow-graph) for PNG/SVG and `--rulegraph`/`--dag` variants.
+
 <!--
 git clone https://github.com/driftless-star/driftless-star.git
 cd driftless-star
