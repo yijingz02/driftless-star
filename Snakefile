@@ -143,7 +143,7 @@ rule stage5_neopax:
         f"sh -c \"cd {DIRS['stage5_input']} && neopax {filename('s5_config')}\""
         " 2>&1 | tee {log}"
 
-# Stage 5 Post-Processing closes the optimization loop and writes a onvergence signal.
+# Stage 5 Post-Processing closes the optimization loop and writes a convergence signal.
 # The new Stage 1 input (S1_INPUT) is UNDECLARED to prevent making the DAG cyclic.
 # `rule all` stays S5_OUTPUT, so a plain `snakemake` remains a pure, non-mutating forward pass.
 rule stage5_post_processing:
