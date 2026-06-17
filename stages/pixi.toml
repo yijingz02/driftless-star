@@ -8,8 +8,7 @@ version = "0.1.0"
 vmec-jax = ">=0.0.4,<0.0.5"
 
 [feature.vmec-jax.tasks.stage-1-vmec]
-cwd = "stage1-equilibrium"
-cmd = "vmec_jax input/input.HSX_vacuum_ns201_quickrun --outdir output"
+cmd = "vmec_jax ../inputs/quick_run/vmec_input.HSX_vacuum_ns201_quickrun --output ../outputs/quick_run/stage1_equilibrium/wout_HSX_vacuum_ns201_quickrun.nc"
 
 [feature.desc.dependencies]
 desc-opt = ">=0.17.1,<0.18"
@@ -24,29 +23,25 @@ cmd = 'python -c "import booz_xform; print(booz_xform.__version__)"' # Todo: Rep
 booz-xform-jax = ">=0.1.0,<0.2"
 
 [feature.booz-xform-jax.tasks.stage-2-booz]
-cwd = "stage2-boozer"
-cmd = "python run_boozer.py --wout ../stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc --output output/boozmn_HSX_vacuum_ns201_quickrun.nc"
+cmd = "python stage2-boozer/run_boozer.py --wout ../outputs/quick_run/stage1_equilibrium/wout_HSX_vacuum_ns201_quickrun.nc --output ../outputs/quick_run/stage2_boozer/boozmn_HSX_vacuum_ns201_quickrun.nc"
 
 [feature.sfincs.dependencies]
 sfincs-mpich = ">=3.0.0,<4"
 
 [feature.sfincs.tasks.stage-3-sfincs-fortran]
-cwd = "stage3-neoclassical"
-cmd = """mkdir -p output && \
-cp input/input.HSX_vacuum_ns201_quickrun output/input.namelist && \
-cd output && \
+cmd = """mkdir -p ../outputs/quick_run/stage3_neoclassical && \
+cp ../inputs/quick_run/sfincs_input.HSX_vacuum_ns201_quickrun ../outputs/quick_run/stage3_neoclassical/input.namelist && \
+cd ../outputs/quick_run/stage3_neoclassical && \
 sfincs"""
 
 [feature.sfincs-jax.dependencies]
 sfincs-jax = ">=1.1.0,<2"
 
 [feature.sfincs-jax.tasks.stage-3-sfincs]
-cwd = "stage3-neoclassical"
-cmd = "sfincs_jax input/input.HSX_vacuum_ns201_quickrun --out output/sfincsOutput_quickrun.h5 --wout-path ../stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc"
+cmd = "sfincs_jax ../inputs/quick_run/sfincs_input.HSX_vacuum_ns201_quickrun --out ../outputs/quick_run/stage3_neoclassical/sfincsOutput_quickrun.h5 --wout-path ../outputs/quick_run/stage1_equilibrium/wout_HSX_vacuum_ns201_quickrun.nc"
 
 [feature.sfincs-jax.tasks.stage-3-sfincs-radial-scan]
-cwd = "stage3-neoclassical"
-cmd = "python sfincs_jax_radial_scan.py"
+cmd = "python stage3-neoclassical/sfincs_jax_radial_scan.py"
 
 [feature.neo-jax.dependencies]
 neo-jax = ">=1.0.1,<2"
@@ -57,12 +52,10 @@ booz-xform-jax = ">=0.1.0,<0.2"
 h5py = ">=3.16.0,<4"
 
 [feature.spectrax-gk.tasks.stage-4-spectrax]
-cwd = "stage4-turbulence"
-cmd = "spectrax-gk run --config ./input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml --out output/hsx_run_quickrun"
+cmd = "spectrax-gk run --config ../inputs/quick_run/HSX_vacuum_ns201_quickrun.toml --out ../outputs/quick_run/stage4_turbulence/hsx_run_quickrun"
 
 [feature.spectrax-gk.tasks.stage-4-spectrax-radial-scan]
-cwd = "stage4-turbulence"
-cmd = "python spectrax_gk_radial_scan.py"
+cmd = "python stage4-turbulence/spectrax_gk_radial_scan.py"
 
 [feature.neopax.dependencies]
 scipy = ">=1.17.1,<2"
@@ -81,8 +74,8 @@ orthax = ">=0.2.8, <0.3"
 neopax = { git = "https://github.com/uwplasma/NEOPAX.git", rev = "f9b3a91bcd1e44205e418ca302c843e7bb0c700d" }
 
 [feature.neopax.tasks.stage-5-neopax]
-cwd = "stage5-transport/input"
-cmd = "neopax Solve_Transport_equations_noHe_radau_HSX_quickrun.toml"
+cwd = "../inputs/quick_run"
+cmd = "neopax common_input.toml"
 
 [feature.cuda]
 platforms = ["linux-64"]
