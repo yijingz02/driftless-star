@@ -158,7 +158,7 @@ rule stage5_post_processing:
     shell:
         f'{DOCKER_PREFIX} {STAGE5_IMG} sh -c "'
         'python stages/stage5-post-processing/fit_vmec_pressure_from_transport_h5.py '
-        'write-input {input} {output.feedback} && '
+        f'write-input {{input}} {S1_INPUT} --output-input {{output.feedback}} && '
         'python stages/stage5-post-processing/stage5_post_processing.py '
         '--transport {input} --signal {output.signal}"'
         " 2>&1 | tee {log}"
