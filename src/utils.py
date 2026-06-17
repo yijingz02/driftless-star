@@ -1,4 +1,4 @@
-"""Cross-stage helper utilities for the StellaForge Snakemake workflow."""
+"""Cross-stage helper utilities for the driftless-star Snakemake workflow."""
 
 from __future__ import annotations
 

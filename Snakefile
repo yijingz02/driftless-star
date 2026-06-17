@@ -1,4 +1,4 @@
-# StellaForge MVP Snakemake workflow
+# driftless-star MVP Snakemake workflow
 
 from src import stage3, stage4, stage5
 
@@ -21,11 +21,11 @@ if DEVICE not in ("cpu", "gpu"):
     )
 
 GPU_FLAG       = "--gpus all " if DEVICE == "gpu" else ""
-STAGE1_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-1-vmec-{DEVICE}"
-STAGE2_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-2-booz-jax-{DEVICE}"
-STAGE3_JAX_IMG = f"ghcr.io/rkhashmani/stellaforge:stage-3-sfincs-{DEVICE}"
-STAGE4_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-4-spectrax-{DEVICE}"
-STAGE5_IMG     = f"ghcr.io/rkhashmani/stellaforge:stage-5-neopax-{DEVICE}"
+STAGE1_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-1-vmec-{DEVICE}"
+STAGE2_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-2-booz-jax-{DEVICE}"
+STAGE3_JAX_IMG = f"ghcr.io/driftless-star/driftless-star:stage-3-sfincs-{DEVICE}"
+STAGE4_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-4-spectrax-{DEVICE}"
+STAGE5_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-5-neopax-{DEVICE}"
 
 # --user: make bind-mounted writes host-owned (Linux docker otherwise writes as root).
 # -e HOME=/tmp: pixi activation needs a writable HOME after dropping root.
@@ -55,6 +55,7 @@ S4_OUTPUT  = f"{DIRS['stage4_output']}/{filename('s4_output')}"
 
 S5_CONFIG  = f"{DIRS['stage5_input']}/{filename('s5_config')}"
 S5_OUTPUT  = f"{DIRS['stage5_output']}/{filename('s5_output')}"
+S5_SIGNAL  = f"{DIRS['stage5_post_processing_output']}/{filename('s5_signal')}"
 
 stage5.prepare_neopax_config(
     s5_config=S5_CONFIG,
@@ -142,10 +143,25 @@ rule stage5_neopax:
         f"sh -c \"cd {DIRS['stage5_input']} && neopax {filename('s5_config')}\""
         " 2>&1 | tee {log}"
 
+# Stage 5 Post-Processing closes the optimization loop and writes a convergence signal.
+# The new Stage 1 input (S1_INPUT) is UNDECLARED to prevent making the DAG cyclic.
+# `rule all` stays S5_OUTPUT, so a plain `snakemake` remains a pure, non-mutating forward pass.
+rule stage5_post_processing:
+    input:  S5_OUTPUT
+    output: S5_SIGNAL
+    log:    f"{DIRS['stage5_post_processing_output']}/{RUN_NAME}.log"
+    shell:
+        f'{DOCKER_PREFIX} {STAGE5_IMG} sh -c "'
+        'python stages/stage5-post-processing/fit_vmec_pressure_from_transport_h5.py '
+        f'write-input {{input}} {S1_INPUT} && '
+        'python stages/stage5-post-processing/stage5_post_processing.py '
+        '--transport {input} --signal {output}"'
+        " 2>&1 | tee {log}"
+
 rule clean:
     shell:
         f"""
         rm -rf {DIRS['stage1_output']} {DIRS['stage2_output']} \
                {DIRS['stage3_output']} {DIRS['stage4_output']} \
-               {DIRS['stage5_output']}
+               {DIRS['stage5_output']} {DIRS['stage5_post_processing_output']}
         """

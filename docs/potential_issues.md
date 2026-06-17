@@ -6,6 +6,11 @@
 ## Documentation
 
 - [ ] Add more details for each software, e.g. for Spectrax-gk's `omega_t` what are units, what is it normalized to (gyro freq, etc), scale lengths. 
+- [ ] `docs/mvp-pipeline.md` per-stage I/O tables are stale relative to `config.yaml`: the Stage 3/4/5 output filenames (`sfincs_jax_flux_profiles.h5`, `neopax_fluxes.h5`, `transport_solution.h5`) and the per-`run_name` output subdirectories differ from the documented `sfincsOutput_quickrun.h5` / `hsx_run_quickrun.*` / `NEOPAX_output_quickrun.h5`. Refresh the per-stage tables (deferred from the closed-loop docs change, which only refreshed the Snakemake section).
+
+## Code Quality / Tooling
+
+- [ ] No type checker is configured, so the type hints being added across the codebase (e.g. `stages/stage4-turbulence/spectrax_gk_radial_scan.py`) are unverified. Adding one (e.g. `ty`, mypy, or pyright) to CI and/or pre-commit would catch incorrect annotations. Raised on PR #78; deferred to a future PR.
 
 ## Stage 1 -- Equilibrium
 

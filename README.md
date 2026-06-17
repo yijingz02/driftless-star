@@ -1,6 +1,6 @@
-# StellaForge
+# driftless-star
 
-StellaForge is an open-source pipeline for stellarator design. It connects five physics stages (equilibrium, Boozer transform, neoclassical transport, turbulence, and profile evolution) and their relevant software into a single reproducible workflow. Given a stellarator boundary shape and initial plasma profiles, the pipeline produces transport-consistent density and temperature profiles along with fusion-power metrics.
+driftless-star is an open-source pipeline for stellarator design. It connects five physics stages (equilibrium, Boozer transform, neoclassical transport, turbulence, and profile evolution) and their relevant software into a single reproducible workflow. Given a stellarator boundary shape and initial plasma profiles, the pipeline produces transport-consistent density and temperature profiles along with fusion-power metrics.
 
 Each stage is modular so that implementations can be swapped independently. The pipeline is designed to be closed-loop, so output profiles can be fed back as input for iterative optimization.
 
@@ -48,7 +48,7 @@ Stages 3 and 4 run in parallel. Each stage should eventually be independently sw
 
 ## Workflow
 
-1. [Fork](https://github.com/RKHashmani/StellaForge/fork) the repository and branch from `main` (e.g., `feat/stage1-newsoftware`)
+1. [Fork](https://github.com/driftless-star/driftless-star/fork) the repository and branch from `main` (e.g., `feat/stage1-newsoftware`)
 2. Work through the relevant phase in the [Guide](docs/guide.md#getting-started)
 3. Open a PR from the fork when deliverables are ready and request a review
 4. After review and merge, the corresponding item below gets checked off
@@ -118,12 +118,22 @@ Snakemake DAG, end-to-end tests, and publishing. Details in the [Guide](docs/gui
 > [!TODO]
 > Document pipeline usage once stages are operational.
 
+### Visualize the pipeline graph
+
+Render the file-flow graph (files as nodes, rules as edges) **including the closed-loop post-processing step** by targeting the convergence signal file:
+
+```
+pixi run -e pipeline bash -c 'snakemake --filegraph stages/stage5-post-processing/output/HSX_vacuum_ns201_quickrun/converge_status.json | dot -Tpdf > docs/figs/stellaforge_filegraph.pdf'
+```
+
+Omit the target to graph the plain forward pass (stops at Stage 5). Needs a one-time `pixi run -e pipeline dot -c`; see [docs/mvp-pipeline.md](docs/mvp-pipeline.md#visualizing-the-file-flow-graph) for PNG/SVG and `--rulegraph`/`--dag` variants.
+
 <!--
-git clone https://github.com/RKHashmani/StellaForge.git
-cd StellaForge
+git clone https://github.com/driftless-star/driftless-star.git
+cd driftless-star
 git submodule update --init --recursive
 snakemake --sdm docker --configfile config.yaml
-docker pull ghcr.io/rkhashmani/stellaforge:stage-1-vmec-cpu
+docker pull ghcr.io/driftless-star/driftless-star:stage-1-vmec-cpu
 -->
 
 ## License
