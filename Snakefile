@@ -81,7 +81,7 @@ rule stage1_vmec:
     log:    f"{P['stage1_dir']}/{RUN_NAME}.log"
     shell:
         f"{DOCKER_PREFIX} {STAGE1_IMG} "
-        f"vmec_jax {{input}} --outdir {P['stage1_dir']} --output {{output}}"
+        f"vmec_jax {{input}} --output {{output}}"
         " 2>&1 | tee {log}"
 
 rule stage2_boozer:
