@@ -18,6 +18,7 @@ directories:
   stage4_output: stages/stage4-turbulence/output/{run_name}
   stage5_input: stages/stage5-transport/input
   stage5_output: stages/stage5-transport/output/{run_name}
+  stage5_post_processing_output: stages/stage5-post-processing/output/{run_name}
 
 filenames:
   s1_input: input.{run_name}
@@ -29,6 +30,7 @@ filenames:
   s4_output: neopax_fluxes.h5
   s5_config: Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
   s5_output: transport_solution.h5
+  s5_signal: converge_status.json
 
 # Stage 3 SFINCS (sfincs_jax) radial scan.
 stage3:

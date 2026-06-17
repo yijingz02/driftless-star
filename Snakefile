@@ -58,6 +58,7 @@ S4_WANDB_MONITOR_LOG = f"{DIRS['stage4_output']}/wandb_monitor.log"
 
 S5_CONFIG  = f"{DIRS['stage5_input']}/{filename('s5_config')}"
 S5_OUTPUT  = f"{DIRS['stage5_output']}/{filename('s5_output')}"
+S5_SIGNAL  = f"{DIRS['stage5_post_processing_output']}/{filename('s5_signal')}"
 
 stage5.prepare_neopax_config(
     s5_config=S5_CONFIG,
@@ -168,10 +169,25 @@ rule stage5_neopax:
         f"sh -c \"cd {DIRS['stage5_input']} && neopax {filename('s5_config')}\""
         " 2>&1 | tee {log}"
 
+# Stage 5 Post-Processing closes the optimization loop and writes a convergence signal.
+# The new Stage 1 input (S1_INPUT) is UNDECLARED to prevent making the DAG cyclic.
+# `rule all` stays S5_OUTPUT, so a plain `snakemake` remains a pure, non-mutating forward pass.
+rule stage5_post_processing:
+    input:  S5_OUTPUT
+    output: S5_SIGNAL
+    log:    f"{DIRS['stage5_post_processing_output']}/{RUN_NAME}.log"
+    shell:
+        f'{DOCKER_PREFIX} {STAGE5_IMG} sh -c "'
+        'python stages/stage5-post-processing/fit_vmec_pressure_from_transport_h5.py '
+        f'write-input {{input}} {S1_INPUT} && '
+        'python stages/stage5-post-processing/stage5_post_processing.py '
+        '--transport {input} --signal {output}"'
+        " 2>&1 | tee {log}"
+
 rule clean:
     shell:
         f"""
         rm -rf {DIRS['stage1_output']} {DIRS['stage2_output']} \
                {DIRS['stage3_output']} {DIRS['stage4_output']} \
-               {DIRS['stage5_output']}
+               {DIRS['stage5_output']} {DIRS['stage5_post_processing_output']}
         """
