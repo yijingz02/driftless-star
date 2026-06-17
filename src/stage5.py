@@ -1,56 +1,58 @@
 """Stage 5 (NEOPAX transport) workflow helpers.
 
-NEOPAX is configured via a TOML file rather than CLI flags, so the Snakefile
-must keep the TOML's path fields aligned with the actual artifacts produced by
-upstream stages and with the run-namespaced output directory. These rewrites
-happen at Snakefile parse time via :func:`prepare_neopax_config`.
+NEOPAX is configured via a TOML file rather than CLI flags. :func:`prepare_neopax_config`
+writes a path-resolved copy of the shared ``common_input`` template under the run's output
+directory (leaving the committed template untouched); the Snakefile then runs NEOPAX on that
+copy. Called at Snakefile parse time.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from .utils import set_assignment
+from .utils import apply_assignments
 
 
 def prepare_neopax_config(
     *,
-    s5_config: str,
-    s5_output_dir: str,
+    s5_config_template: str,
+    s5_resolved_config: str,
     s1_output: str,
     s2_output: str,
     s3_output: str,
     s4_output: str,
+    s5_output_dir: str,
 ) -> None:
-    """Rewrite NEOPAX's TOML path fields so they match the current pipeline run.
+    """Write a path-resolved copy of the NEOPAX template for the current run.
 
-    Updates the five fields NEOPAX reads to locate inputs and write outputs:
-
-    - ``vmec_file``, ``boozer_file``, ``neoclassical_file``, ``turbulence_file``
-      are set to the relative paths of the corresponding Stage 1-4 output
-      artifacts.
-    - ``transport_output_dir`` is set to the relative path of the Stage 5 output
-      directory (with a trailing slash, matching NEOPAX's convention).
-
-    All paths are written relative to the directory containing the TOML, since
-    NEOPAX is launched with that directory as CWD.
+    Writes a path-resolved copy of ``s5_config_template`` to ``s5_resolved_config``, with
+    its five path fields rewritten relative to the copy's own directory (NEOPAX runs
+    there). The committed template is never modified.
 
     Parameters
     ----------
-    s5_config : str
-        Path to the Stage 5 NEOPAX TOML config to rewrite.
-    s5_output_dir : str
-        Stage 5 output directory (already ``{run_name}``-substituted).
+    s5_config_template : str
+        Path to the shared NEOPAX template (``inputs/<run>/common_input.toml``).
+    s5_resolved_config : str
+        Path of the resolved copy to write (under ``outputs/<run>/stage5_transport/``).
     s1_output, s2_output, s3_output, s4_output : str
         Paths to Stage 1-4 output artifacts referenced by NEOPAX.
+    s5_output_dir : str
+        Stage 5 output directory (where NEOPAX writes ``transport_solution.h5``).
     """
-    toml_dir = Path(s5_config).parent.resolve()
+    resolved = Path(s5_resolved_config)
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    base = resolved.parent.resolve()
 
     def _rel(p: str) -> str:
-        return str(Path(p).resolve().relative_to(toml_dir, walk_up=True))
+        return str(Path(p).resolve().relative_to(base, walk_up=True))
 
-    set_assignment(s5_config, "vmec_file",            f'"{_rel(s1_output)}"')
-    set_assignment(s5_config, "boozer_file",          f'"{_rel(s2_output)}"')
-    set_assignment(s5_config, "neoclassical_file",    f'"{_rel(s3_output)}"')
-    set_assignment(s5_config, "turbulence_file",      f'"{_rel(s4_output)}"')
-    set_assignment(s5_config, "transport_output_dir", f'"{_rel(s5_output_dir)}/"')
+    assignments = {
+        "vmec_file": f'"{_rel(s1_output)}"',
+        "boozer_file": f'"{_rel(s2_output)}"',
+        "neoclassical_file": f'"{_rel(s3_output)}"',
+        "turbulence_file": f'"{_rel(s4_output)}"',
+        "transport_output_dir": f'"{_rel(s5_output_dir)}/"',
+    }
+    template_text = Path(s5_config_template).read_bytes().decode("utf-8")
+    resolved.write_bytes(apply_assignments(template_text, assignments).encode("utf-8"))

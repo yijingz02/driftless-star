@@ -48,11 +48,9 @@ except ModuleNotFoundError:  # pragma: no cover
 SCRIPT_DIR = Path(__file__).resolve().parent
 STAGES_DIR = SCRIPT_DIR.parent
 
-DEFAULT_NEOPAX_CONFIG = (
-    STAGES_DIR / "stage5-transport" / "input" / "Solve_Transport_equations_noHe_radau_HSX_quickrun.toml"
-)
-DEFAULT_SPECTRAX_TEMPLATE = SCRIPT_DIR / "input" / "runtime_hsx_nonlinear_vmec_geometry_quickrun.toml"
-DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "output" / "HSX_vacuum_ns201_quickrun"
+DEFAULT_COMMON_CONFIG = STAGES_DIR.parent / "inputs" / "quick_run" / "common_input.toml"
+DEFAULT_SPECTRAX_TEMPLATE = STAGES_DIR.parent / "inputs" / "quick_run" / "HSX_vacuum_ns201_quickrun.toml"
+DEFAULT_OUTPUT_DIR = STAGES_DIR.parent / "outputs" / "quick_run" / "stage4_turbulence"
 DEFAULT_SPECTRAX_ROOT = Path(__file__).resolve().parents[3] / "SPECTRAX-GK"
 
 NEOPAX_DENSITY_REFERENCE_M3 = 1.0e20
@@ -282,7 +280,7 @@ def _resolve_template_path(template_arg: str | None, base: Path) -> Path | None:
     return (base / path).resolve()
 
 
-def _parse_species_from_neopax_config(cfg: dict[str, Any]) -> list[SpeciesMeta]:
+def _parse_species_from_common_config(cfg: dict[str, Any]) -> list[SpeciesMeta]:
     species_cfg = cfg.get("species", {})
     names = list(species_cfg.get("names", []))
     masses = list(species_cfg.get("mass_mp", []))
@@ -550,7 +548,7 @@ def _choose_radius_indices(
 def _build_manifest(
     *,
     neopax_result: Path,
-    neopax_config: Path,
+    common_config: Path,
     spectrax_root: Path,
     output_dir: Path,
     snapshot: ProfileSnapshot,
@@ -567,7 +565,7 @@ def _build_manifest(
     if density.shape[0] != len(species) or temperature.shape[0] != len(species):
         raise ValueError("NEOPAX HDF5 species dimension does not match the species list from the TOML")
 
-    template_path = _resolve_template_path(getattr(args, "spectrax_template", None), neopax_config.resolve().parent)
+    template_path = _resolve_template_path(getattr(args, "spectrax_template", None), common_config.resolve().parent)
     template_cfg = _maybe_load_toml(template_path)
     template_grid = _template_section(template_cfg, "grid")
     template_time = _template_section(template_cfg, "time")
@@ -617,11 +615,11 @@ def _build_manifest(
     ref_density = np.maximum(density[ref_idx], float(args.density_floor))
     ref_temperature = np.maximum(temperature[ref_idx], float(args.temperature_floor))
 
-    neopax_root = _infer_neopax_root(neopax_config)
+    neopax_root = _infer_neopax_root(common_config)
 
     vmec_path = _resolve_cli_path(args.vmec_file_override)
     if vmec_path is None:
-        cfg = _load_toml(neopax_config)
+        cfg = _load_toml(common_config)
         geometry_cfg = cfg.get("geometry", {})
         vmec_path = _resolve_relative(neopax_root, geometry_cfg.get("vmec_file"))
     if vmec_path is None:
@@ -629,7 +627,7 @@ def _build_manifest(
 
     booz_path = _resolve_cli_path(args.boozer_file_override)
     if booz_path is None:
-        cfg = _load_toml(neopax_config)
+        cfg = _load_toml(common_config)
         geometry_cfg = cfg.get("geometry", {})
         booz_path = _resolve_relative(neopax_root, geometry_cfg.get("boozer_file"))
     a_minor = _infer_vmec_minor_radius(vmec_path)
@@ -742,7 +740,7 @@ def _build_manifest(
         "schema_version": 1,
         "profiles_source": str(args.profiles_source).lower(),
         "neopax_result": "" if neopax_result is None else str(neopax_result.resolve()),
-        "neopax_config": str(neopax_config.resolve()),
+        "common_config": str(common_config.resolve()),
         "spectrax_root": str(spectrax_root.resolve()),
         "output_dir": str(output_dir.resolve()),
         "snapshot_time": snapshot.time_value,
@@ -963,12 +961,12 @@ def _write_normalization_audit(output_dir: Path, manifest: dict[str, Any]) -> No
 
 
 def cmd_prepare(args: argparse.Namespace) -> int:
-    neopax_config = Path(args.neopax_config).resolve()
+    common_config = Path(args.common_config).resolve()
     spectrax_root = Path(args.spectrax_root).resolve()
     output_dir = Path(args.output_dir).resolve()
 
-    cfg = _load_toml(neopax_config)
-    species = _parse_species_from_neopax_config(cfg)
+    cfg = _load_toml(common_config)
+    species = _parse_species_from_common_config(cfg)
     geometry_cfg = cfg.get("geometry", {})
     profiles_source = str(args.profiles_source).strip().lower()
     if profiles_source == "analytical":
@@ -997,7 +995,7 @@ def cmd_prepare(args: argparse.Namespace) -> int:
     )
     manifest = _build_manifest(
         neopax_result=neopax_result,
-        neopax_config=neopax_config,
+        common_config=common_config,
         spectrax_root=spectrax_root,
         output_dir=output_dir,
         snapshot=snapshot,
@@ -1641,7 +1639,7 @@ def cmd_collect(args: argparse.Namespace) -> int:
         meta.attrs["manifest"] = str(Path(args.manifest).resolve())
         meta.attrs["electron_model"] = str(manifest["electron_model"])
         meta.attrs["neopax_result"] = str(manifest["neopax_result"])
-        meta.attrs["neopax_config"] = str(manifest["neopax_config"])
+        meta.attrs["common_config"] = str(manifest["common_config"])
         meta.attrs["average_window"] = float(args.average_window)
         if manifest.get("normalization", {}).get("rho_star_physical", None) is not None:
             meta.attrs["rho_star_physical_override"] = float(manifest["normalization"]["rho_star_physical"])
@@ -1733,7 +1731,7 @@ def _warn_if_hdf5_disabled(cfg: dict) -> None:
 
 
 def cmd_all(args: argparse.Namespace) -> int:
-    config_path = Path(args.neopax_config).resolve()
+    config_path = Path(args.common_config).resolve()
     cfg = _load_toml(config_path)
     if str(args.profiles_source).lower() == "transport_h5":
         _warn_if_hdf5_disabled(cfg)
@@ -1753,7 +1751,7 @@ def cmd_all(args: argparse.Namespace) -> int:
     prepare_args = argparse.Namespace(
         profiles_source=args.profiles_source,
         neopax_result=None if result_path is None else str(result_path),
-        neopax_config=str(config_path),
+        common_config=str(config_path),
         spectrax_root=args.spectrax_root,
         spectrax_template=spectrax_template,
         output_dir=str(output_dir),
@@ -1860,9 +1858,9 @@ def cmd_all(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
-        "--neopax-config",
-        default=str(DEFAULT_NEOPAX_CONFIG),
-        help="NEOPAX transport TOML",
+        "--common-config",
+        default=str(DEFAULT_COMMON_CONFIG),
+        help="Path to the shared common_input TOML.",
     )
     p.add_argument("--neopax-result", default=None, help="Optional explicit path to transport_solution.h5")
     p.add_argument(

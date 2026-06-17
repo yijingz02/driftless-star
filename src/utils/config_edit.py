@@ -1,38 +1,34 @@
-"""Cross-stage helper utilities for the driftless-star Snakemake workflow."""
+"""Rewriting ``key = value`` assignments in upstream config-file text.
+
+Used to update config files (TOML/INI-style) for tools that do not expose CLI overrides.
+"""
 
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from collections.abc import Mapping
 
 
-def set_assignment(file_path: str | Path, key: str, value: str) -> None:
-    """Rewrite the right-hand side of ``key = ...`` in ``file_path`` to ``value``.
+def apply_assignments(text: str, assignments: Mapping[str, str]) -> str:
+    """Update ``key = value`` lines in ``text`` and return the result.
 
-    Used to push pipeline-derived paths and run identifiers into upstream
-    config files (TOML/INI-style) for tools that do not expose CLI overrides.
+    Operates purely on the string (no file I/O). For each ``key`` in ``assignments``,
+    the text after the ``=`` on the matching line is replaced with the given value,
+    written exactly as given (no quoting is added, so the caller must include any quotes
+    the field needs). Keys absent from ``text`` are left unchanged.
 
     Parameters
     ----------
-    file_path : str or Path
-        Path to the config file. If the file does not exist, the call is a
-        no-op.
-    key : str
-        The configuration key whose value should be replaced. Matched as a
-        line-anchored literal (``key = ...``) so substring keys do not collide.
-    value : str
-        The replacement right-hand side, inserted verbatim (no quoting added).
-        Callers are responsible for any quoting required by the target syntax.
+    text : str
+        The config file contents.
+    assignments : Mapping[str, str]
+        Maps each config key to its replacement value (the text after the ``=``).
     """
-    path = Path(file_path)
-    if not path.exists():
-        return
-    text = path.read_bytes().decode("utf-8")
-    new_text = re.sub(
-        rf"^({re.escape(key)}[ \t]*=[ \t]*)[^\r\n]*",
-        lambda m: f"{m.group(1)}{value}",
-        text,
-        flags=re.MULTILINE,
-    )
-    if new_text != text:
-        path.write_bytes(new_text.encode("utf-8"))
+    for key, value in assignments.items():
+        text = re.sub(
+            rf"^({re.escape(key)}[ \t]*=[ \t]*)[^\r\n]*",
+            lambda m, v=value: f"{m.group(1)}{v}",
+            text,
+            flags=re.MULTILINE,
+        )
+    return text

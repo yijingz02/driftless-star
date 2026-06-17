@@ -64,7 +64,7 @@ def radial_scan_cmd(
     parts = [
         f"{docker_prefix} {image}",
         "python stages/stage4-turbulence/spectrax_gk_radial_scan.py",
-        "--neopax-config {input.neopax_config}",
+        "--common-config {input.common_config}",
         "--spectrax-template {input.config_file}",
         "--vmec-file-override {input.wout}",
         "--boozer-file-override {input.boozer}",
