@@ -162,7 +162,3 @@ rule stage5_post_processing:
         'python stages/stage5-post-processing/stage5_post_processing.py '
         '--transport {input} --signal {output.signal}"'
         " 2>&1 | tee {log}"
-
-rule clean:
-    shell:
-        f"rm -rf {P['output_dir']}"

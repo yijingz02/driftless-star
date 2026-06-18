@@ -295,7 +295,7 @@ From the repo root, with Docker running:
 ```
 pixi run -e pipeline snakemake -n --configfile inputs/quick_run/config.yaml          # dry-run: shows the plan without executing
 pixi run -e pipeline snakemake --configfile inputs/quick_run/config.yaml --cores 4   # full forward pass through Stage 5 (Stages 2 and 3 run in parallel after Stage 1; Stage 4 follows Stage 2)
-pixi run -e pipeline snakemake clean --configfile inputs/quick_run/config.yaml --cores 1   # remove the run's outputs/quick_run/
+rm -rf outputs/quick_run/                                                            # remove the run's outputs (delete the run's outputs/<run>/ directory by hand)
 ```
 
 Per-invocation overrides via `--config` (layered on top of the config file):
