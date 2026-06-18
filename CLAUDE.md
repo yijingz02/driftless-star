@@ -33,17 +33,17 @@ Forward-pass chain: `vmec_jax` -> `booz_xform_jax` -> `sfincs_jax` -> `SPECTRAX-
 ### Naming Conventions
 
 - Stage directories: `stage{N}-{name}` (e.g., `stage1-equilibrium`)
-- Per-stage data subdirectories (under `stages/stage{N}-{name}/`): the committed `_quickrun` baseline **inputs** (e.g. `input.HSX_vacuum_ns201_quickrun`) are tracked so a fresh clone is immediately runnable. The `input/` and `output/` directories are otherwise gitignored: Snakemake regenerates `output/` in place on each rerun, and ad-hoc experiment-specific inputs stay untracked.
+- Run inputs and outputs (top-level): each run is a folder under `inputs/` holding its `config.yaml` and stage inputs; the committed `inputs/quick_run/` baseline is tracked so a fresh clone is immediately runnable. Generated artifacts land under `outputs/<run>/stageN_<name>/`. `outputs/` and ad-hoc `inputs/<run>/` folders are gitignored (only `inputs/quick_run/` is tracked).
 - Container images: `ghcr.io/driftless-star/driftless-star:stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`) (on GHCR)
 - W&B projects: `driftless-star-stage{N}-{name}`
-- Output directories: `{run_dir}/stage{N}_{name}/`
+- Output directories: `outputs/<run>/stageN_<name>/` (e.g. `outputs/quick_run/stage1_equilibrium/`)
 - Test files: mirror source structure in `tests/`
 
 ### Inter-Stage Contracts
 
 Currently, most inter-stage communication is **file-based** using standard physics file formats:
 - **NetCDF** (`.nc`): equilibrium (`wout_*.nc`), Boozer (`boozmn_*.nc`), turbulence outputs
-- **HDF5** (`.h5`): neoclassical outputs (`sfincsOutput.h5`), `NEOPAX` profiles
+- **HDF5** (`.h5`): neoclassical outputs (`sfincs_jax_flux_profiles.h5`), `NEOPAX` profiles
 
 Snakemake rules define which files connect which stages. Each stage's `spec.md` is the authoritative source for required/optional fields in its output files. Where alternative implementations use different file formats or field names, a wrapper or adapter layer will be needed to translate between them.
 
