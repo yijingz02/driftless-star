@@ -2,11 +2,10 @@
 
 ## Cross-Stage Infrastructure
 
-- [ ] Maybe a location where standard input/outputs are stored and logged? This has the added benefit that we can use this as a "cache" to quickly retrieve outputs that have already been processed, kind of like a database.
+- [ ] Use the standard `outputs/` tree as a cache to quickly retrieve results that have already been processed, kind of like a database.
 ## Documentation
 
 - [ ] Add more details for each software, e.g. for Spectrax-gk's `omega_t` what are units, what is it normalized to (gyro freq, etc), scale lengths. 
-- [ ] `docs/mvp-pipeline.md` per-stage I/O tables are stale relative to `config.yaml`: the Stage 3/4/5 output filenames (`sfincs_jax_flux_profiles.h5`, `neopax_fluxes.h5`, `transport_solution.h5`) and the per-`run_name` output subdirectories differ from the documented `sfincsOutput_quickrun.h5` / `hsx_run_quickrun.*` / `NEOPAX_output_quickrun.h5`. Refresh the per-stage tables (deferred from the closed-loop docs change, which only refreshed the Snakemake section).
 
 ## Code Quality / Tooling
 

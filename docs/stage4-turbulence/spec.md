@@ -213,14 +213,14 @@ pixi run stage-4-spectrax
 which executes something morally equivalent to:
 
 ```
-spectrax-gk run --config ./stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml --out stage4-turbulence/output/hsx_run
+spectrax-gk run --config inputs/quick_run/HSX_vacuum_ns201_quickrun.toml --out outputs/quick_run/stage4_turbulence/hsx_run
 ```
 
-**Input:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` + `stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml`
-**Output:** `stages/stage4-turbulence/output/hsx_run_quickrun.summary.json` + `stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv`
+**Input:** `outputs/quick_run/stage1_equilibrium/wout_HSX_vacuum_ns201_quickrun.nc` + `inputs/quick_run/HSX_vacuum_ns201_quickrun.toml`
+**Output:** `outputs/quick_run/stage4_turbulence/neopax_fluxes.h5` (+ `flux_summary.h5`, `manifest.json`, `runs.csv`)
 
 > [!NOTE]
-> The TOML's `vmec_file` points into `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec` first. The VMEC geometry path also requires `booz_xform_jax` at runtime (lazy dependency).
+> The TOML's `vmec_file` points into `outputs/quick_run/stage1_equilibrium/`. Populate this directory by running `pixi run stage-1-vmec` first. The VMEC geometry path also requires `booz_xform_jax` at runtime (lazy dependency).
 
 See `docs/mvp-pipeline.md` for full I/O details.
 

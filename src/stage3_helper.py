@@ -59,7 +59,7 @@ def radial_scan_cmd(
     parts = [
         f"{docker_prefix} {image}",
         "python stages/stage3-neoclassical/sfincs_jax_radial_scan.py",
-        "--neopax-config {input.neopax_config}",
+        "--common-config {input.common_config}",
         "--sfincs-template {input.config_file}",
         "--wout-path {input.wout}",
         f"--output-dir {output_dir}",

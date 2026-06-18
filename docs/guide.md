@@ -21,7 +21,7 @@ driftless-star implements the stellarator design workflow described in the compa
 |-------|---------|-------------|--------------|-----------------|------------------|
 | 1. Equilibrium | Ideal-MHD force balance | `vmec_jax`, `DESC` | `VMEC++` | INDATA/JSON boundary coefficients, pressure/iota/current coefficients, PHIEDGE | `wout_*.nc` (NetCDF) |
 | 2. Boozer Transform | Coordinate transform to Boozer angles | `booz_xform_jax` | `BOOZ_XFORM` | `wout_*.nc` | `boozmn_*.nc` (NetCDF) |
-| 3. Neoclassical | Effective ripple, drift-kinetic transport | `NEO_JAX`, `sfincs_jax` | `NEO`, `SFINCS` | `NEO_JAX`: `boozmn_*.nc`; `SFINCS`: `wout_*.nc` + input file | `neo_out.*`, `sfincsOutput.h5` |
+| 3. Neoclassical | Effective ripple, drift-kinetic transport | `NEO_JAX`, `sfincs_jax` | `NEO`, `SFINCS` | `NEO_JAX`: `boozmn_*.nc`; `SFINCS`: `wout_*.nc` + input file | `neo_out.*`, `sfincs_jax_flux_profiles.h5` |
 | 4. Turbulence | Delta-f gyrokinetic equation | `SPECTRAX-GK` | `GX`, `GENE` | Geometry + species profiles/gradients | gamma, omega, heat/particle flux (NetCDF/CSV) |
 | 5. Transport | 1D conservation laws for n_s, p_s | `NEOPAX` | `Trinity3D` | geometry + fluxes | n(r), T(r), E_r(r), P_fus, Q (HDF5/NetCDF) |
 
@@ -34,11 +34,11 @@ driftless-star implements the stellarator design workflow described in the compa
 
 Currently, most inter-stage communication is **file-based** using standard physics file formats:
 - **NetCDF** (`.nc`): equilibrium (`wout_*.nc`), Boozer (`boozmn_*.nc`), turbulence outputs
-- **HDF5** (`.h5`): neoclassical outputs (`sfincsOutput.h5`), `NEOPAX` profiles
+- **HDF5** (`.h5`): neoclassical outputs (`sfincs_jax_flux_profiles.h5`), `NEOPAX` profiles
 
 Snakemake rules define which files connect which stages. Each stage's `spec.md` is the authoritative source for required/optional fields in its output files. Where alternative implementations use different file formats or field names, a wrapper or adapter layer will be needed to translate between them.
 
-**Output directory convention:** Each stage writes to `{run_dir}/stage{N}_{name}/` on a shared volume mount.
+**Output directory convention:** Each stage writes to `outputs/<run>/stageN_<name>/` on a shared volume mount.
 
 **Key points** from the TeX manuscripts:
 
@@ -50,7 +50,7 @@ Snakemake rules define which files connect which stages. Each stage's `spec.md` 
 
 The pipeline should eventually support config-driven implementation swapping. Possible levels of swappability:
 
-- **Single-stage swap.** Change `config.yaml` to select a different implementation for one stage. The output file format should match what downstream stages expect. Example: swap Stage 4 from `SPECTRAX-GK` to `GX`.
+- **Single-stage swap.** Change `inputs/<run>/config.yaml` to select a different implementation for one stage. The output file format should match what downstream stages expect. Example: swap Stage 4 from `SPECTRAX-GK` to `GX`.
 
 - **Multi-stage swap.** A single combined Snakemake rule replaces multiple individual stage rules. It should produce all output files that downstream stages expect. Example: `DESC` can perform both equilibrium solving and Boozer transformation internally, replacing Stages 1 and 2 with a single rule.
 
@@ -166,6 +166,12 @@ driftless-star is a **recipe repo**: it contains everything needed to build and 
 
 Each workspace has its own lockfile (`pixi.lock` / `stages/pixi.lock`).
 
+**The same boundary at the code level.** Two kinds of stage code live in the repo and should not be confused, despite the similar names:
+- **`stages/stage{N}-{name}/*.py`** -- physics scripts. Self-contained scripts that import the upstream solver and do the numerical work (e.g., radial flux scans, the Boozer transform, pressure post-processing). They run *inside* the stage containers, and `stages/` is the Docker build context.
+- **`src/stage{N}_helper.py`** -- orchestration helpers. Small modules the `Snakefile` imports on the execution node (in the root `pipeline` env, never containerized) and that contain no physics. Stages 3 and 4 compose each stage's `docker run ...` command from its `config.yaml` block; Stage 5 writes a path-resolved copy of the NEOPAX config.
+
+So `src/stage3_helper.py` *builds* the command, while `stages/stage3-neoclassical/sfincs_jax_radial_scan.py` is what that command *runs* inside the container.
+
 **Templated container images.** A single shared `stages/Dockerfile` and `stages/apptainer.def` use build arguments to select the target environment at build time:
 - `ENVIRONMENT` -- the Pixi environment name (e.g., `stage-1-vmec`, `stage-2-booz-jax-gpu`). Must be passed explicitly when building locally:
    - `docker build --build-arg ENVIRONMENT=stage-1-vmec stages/`
@@ -189,7 +195,7 @@ Updating the orchestration env follows the same pattern against the root `pixi.t
 - Build and run the container locally
 - Verify it can read input files from a mounted volume
 - Verify it writes output files to the expected location on the shared volume
-- Verify the output directory follows the naming convention: `{run_dir}/stage{N}_{name}/`
+- Verify the output directory follows the naming convention: `outputs/<run>/stageN_<name>/`
 
 ### Writing Tests
 
@@ -208,7 +214,7 @@ Place tests in `tests/stage{N}-{name}/`.
 **Integration tests.** Verify that the stage's output is valid input for its downstream consumers. For example:
 - Stage 1: verify `wout_*.nc` can be read by `booz_xform_jax` (Stage 2), `sfincs_jax` (Stage 3), and `SPECTRAX-GK` (Stage 4)
 - Stage 2: verify `boozmn_*.nc` can be read by `NEO_JAX` (Stage 3)
-- Stage 3: verify `sfincsOutput.h5` (from `sfincs_jax`) can be read by `NEOPAX` (Stage 5)
+- Stage 3: verify `sfincs_jax_flux_profiles.h5` (from `sfincs_jax`) can be read by `NEOPAX` (Stage 5)
 - Stage 4: verify flux CSV output can be consumed by `NEOPAX` (Stage 5)
 - Stage 5: verify end-to-end output (`profiles.h5`: n(r), T(r), E_r(r), P_fus, Q) is produced correctly
 - Stage 5 → Stage 1: verify updated profiles from Stage 5 can be fed back as input to Stage 1 to close the optimization loop
@@ -242,7 +248,7 @@ When a stage completes Phase 2 (containerized, tested, and producing valid outpu
 > [!TODO]
 > Define the config schema and rule-selection logic.
 
-The pipeline should have a configuration file (e.g., `config.yaml`) at the repo root that controls which implementation is used per stage, stage-specific parameters, and resource requirements.
+The pipeline run configuration lives in each run folder (`inputs/<run>/config.yaml`, passed via `--configfile`) and should control which implementation is used per stage, the stage-specific parameters, and resource requirements.
 
 ### Integration Testing
 

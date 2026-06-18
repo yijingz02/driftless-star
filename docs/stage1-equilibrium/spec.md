@@ -221,8 +221,8 @@ Reference: `stellarator_workflow.tex`, Sections 4.1-4.2.
 pixi run stage-1-vmec
 ```
 
-**Input:** `stages/stage1-equilibrium/input/input.HSX_vacuum_ns201_quickrun`
-**Output:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc`
+**Input:** `inputs/quick_run/vmec_input.HSX_vacuum_ns201_quickrun`
+**Output:** `outputs/quick_run/stage1_equilibrium/wout_HSX_vacuum_ns201_quickrun.nc`
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
