@@ -1,6 +1,6 @@
 # driftless-star MVP Snakemake workflow
 
-from src import stage3, stage4, stage5
+from src import stage3_helper, stage4_helper, stage5_helper
 from src.utils import resolve_pipeline_paths, RESOLVED_COMMON_CONFIG
 
 # Require an explicit run config
@@ -59,7 +59,7 @@ STAGE3_CFG = config["stage3"]["sfincs_jax"]
 STAGE4_CFG = config["stage4"]["spectrax_gk"]
 
 # Write a path-resolved copy of the NEOPAX template under outputs/ and run that (template untouched).
-stage5.prepare_neopax_config(
+stage5_helper.prepare_neopax_config(
     s5_config_template=S5_CONFIG,
     s5_resolved_config=P["s5_resolved_config"],
     s1_output=S1_OUTPUT,
@@ -103,7 +103,7 @@ rule stage3_sfincs:
     log:
         f"{P['stage3_dir']}/{RUN_NAME}.log"
     shell:
-        stage3.radial_scan_cmd(
+        stage3_helper.radial_scan_cmd(
             docker_prefix=DOCKER_PREFIX,
             image=STAGE3_JAX_IMG,
             stage_cfg=STAGE3_CFG,
@@ -122,7 +122,7 @@ rule stage4_spectrax:
     log:
         f"{P['stage4_dir']}/{RUN_NAME}.log"
     shell:
-        stage4.radial_scan_cmd(
+        stage4_helper.radial_scan_cmd(
             docker_prefix=DOCKER_PREFIX,
             image=STAGE4_IMG,
             stage_cfg=STAGE4_CFG,
