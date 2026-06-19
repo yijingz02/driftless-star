@@ -61,14 +61,6 @@ def pressure_converged(transport: Path, *, rel_tol: float) -> bool:
         )
         return False
 
-    initial_norm = float(np.linalg.norm(p_initial))
-    if initial_norm == 0.0:
-        logger.warning(
-            "%s has a zero-norm initial pressure profile; cannot assess convergence, "
-            "reporting not converged.",
-            transport,
-        )
-        return False
 
     rel_change = float(np.linalg.norm((p_final - p_initial) / p_initial))
     logger.info("pressure relative RMS change = %.3e (rel_tol = %.3e)", rel_change, rel_tol)
