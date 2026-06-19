@@ -73,6 +73,36 @@ def return_converged_false(transport: Path) -> bool:
     return False
 
 
+def build_signal(transport: Path, *, rel_tol: float) -> dict[str, bool]:
+    """Assemble the closed-loop signal the driver reads: ``{"converged", "halt"}``.
+
+    ``halt`` asks the loop driver to stop for a reason other than convergence.
+
+    Parameters
+    ----------
+    transport : Path
+        This pass's ``transport_solution.h5``.
+    rel_tol : float
+        Relative RMS tolerance forwarded to the convergence criterion.
+
+    Returns
+    -------
+    dict
+        ``{"converged": bool, "halt": bool}``.
+    """
+    for label, time_index, final_time in (("initial", 0, False), ("final", -1, True)):
+        _, pressure, _ = _load_total_pressure(transport, time_index=time_index, final_time=final_time)
+        if np.any(pressure <= 0.0):
+            logger.warning(
+                "%s total pressure is non-positive at profile index/indices %s; the equilibrium "
+                "was not sustained. Halting the loop; restart from different initial conditions.",
+                label, np.flatnonzero(pressure <= 0.0).tolist(),
+            )
+            return {"converged": False, "halt": True}
+
+    return {"converged": pressure_converged(transport, rel_tol=rel_tol), "halt": False}
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = argparse.ArgumentParser(description="Stage 5 Post-Processing: write the closed-loop convergence signal.")
@@ -86,7 +116,7 @@ def main() -> None:
     if args.pressure_rel_tol <= 0.0:
         parser.error(f"--pressure-rel-tol must be positive, got {args.pressure_rel_tol}.")
 
-    status = {"converged": pressure_converged(args.transport, rel_tol=args.pressure_rel_tol)}
+    status = build_signal(args.transport, rel_tol=args.pressure_rel_tol)
     args.signal.parent.mkdir(parents=True, exist_ok=True)
     args.signal.write_text(json.dumps(status) + "\n")
     print(f"# converge_status: {status}")

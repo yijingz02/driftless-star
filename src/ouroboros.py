@@ -132,7 +132,12 @@ def main() -> None:
                          cores=args.cores, config_path=config_path, repo_root=repo_root)
 
         prev_p = iter_p  # post-processing wrote iter_p['s1_feedback']; it seeds iteration n+1
-        if json.loads(_abs(repo_root, iter_p["s5_signal"]).read_text()).get("converged"):
+        signal = json.loads(_abs(repo_root, iter_p["s5_signal"]).read_text())
+        if signal.get("halt"):
+            logger.warning("Iteration %d: Stage 5 signalled a halt (pressure not sustained); "
+                           "stopping. Restart from different initial conditions.", n)
+            break
+        if signal.get("converged"):
             logger.info("Converged at iteration %d; stopping.", n)
             break
     logger.info("Loop finished after %d iteration(s); records under %s/loop/", n, base_out)
