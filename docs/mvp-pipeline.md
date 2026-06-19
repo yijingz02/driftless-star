@@ -406,7 +406,13 @@ outputs/<run>/loop/iter_N/
 
 ### Convergence
 
-Convergence is currently a **stub**: `converged()` in `stage5_post_processing.py` always returns `False`, so `converge_status.json` is always `{"converged": false}` and the loop runs the full `--max-iters`. The signal file is the seam for a future "Stage 5 output unchanged" criterion.
+Convergence is decided by `pressure_converged()` in `stage5_post_processing.py`. A pass is converged when this pass's `transport_solution.h5` shows the total pressure profile `P(rho)` has reached steady state, i.e. the relative RMS change between its initial and final time slices falls below the configured tolerance:
+
+```
+||P_final - P_initial|| / ||P_initial|| < pressure_rel_tol
+```
+
+`pressure_rel_tol` is set in the top-level `convergence` block of the run config (defaulting to `1.0e-2`). The verdict is written to `converge_status.json` as `{"converged": true}` or `{"converged": false}`, and `ouroboros` stops the loop on the first `true`; otherwise it runs the full `--max-iters`. If the transport solution has fewer than two distinct time slices, convergence cannot be assessed and the pass reports `false`. A `return_converged_false()` placeholder is kept under an "Alternative Convergence Criteria" comment so a different criterion can be swapped in.
 
 > [!NOTE]
 > To render the file-flow graph *including* this post-processing step, target the signal file; see the [README](../README.md#visualize-the-pipeline-graph). Omitting the target graphs the plain forward pass (stops at Stage 5).
