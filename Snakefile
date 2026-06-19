@@ -58,6 +58,9 @@ S1_FEEDBACK = P["s1_feedback"]
 STAGE3_CFG = config["stage3"]["sfincs_jax"]
 STAGE4_CFG = config["stage4"]["spectrax_gk"]
 
+# Stage 5 post-processing convergence threshold (see the `convergence` block in inputs/<run>/config.yaml).
+PRESSURE_REL_TOL = config.get("convergence", {}).get("pressure_rel_tol", 1.0e-2)
+
 # Write a path-resolved copy of the NEOPAX template under outputs/ and run that (template untouched).
 stage5_helper.prepare_neopax_config(
     s5_config_template=S5_CONFIG,
@@ -160,5 +163,5 @@ rule stage5_post_processing:
         'python stages/stage5-post-processing/fit_vmec_pressure_from_transport_h5.py '
         f'write-input {{input}} {S1_INPUT} --output-input {{output.feedback}} && '
         'python stages/stage5-post-processing/stage5_post_processing.py '
-        '--transport {input} --signal {output.signal}"'
+        f'--transport {{input}} --signal {{output.signal}} --pressure-rel-tol {PRESSURE_REL_TOL}"'
         " 2>&1 | tee {log}"

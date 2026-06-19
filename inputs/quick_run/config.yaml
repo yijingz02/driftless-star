@@ -24,6 +24,13 @@ filenames:
   s5_output: transport_solution.h5
   s5_signal: converge_status.json
 
+# Convergence criteria
+# Converged when the relative RMS change of the total pressure profile between
+# the initial and final transport time slices is below this tolerance:
+#   ||P_final - P_initial|| / ||P_initial|| < pressure_rel_tol
+convergence:
+  pressure_rel_tol: 1.0e-2
+
 # Stage 3 SFINCS (sfincs_jax) radial scan.
 stage3:
   sfincs_jax:
