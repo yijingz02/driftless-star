@@ -70,7 +70,7 @@ def pressure_converged(transport: Path, *, rel_tol: float) -> bool:
         )
         return False
 
-     rel_change = float(np.linalg.norm((p_final - p_initial) / p_initial))
+   rel_change = float(np.linalg.norm((p_final - p_initial) / p_initial))
     logger.info("pressure relative RMS change = %.3e (rel_tol = %.3e)", rel_change, rel_tol)
     return rel_change < rel_tol
 
