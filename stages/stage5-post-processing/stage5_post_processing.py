@@ -82,6 +82,7 @@ def return_converged_false(transport: Path) -> bool:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = argparse.ArgumentParser(description="Stage 5 Post-Processing: write the closed-loop convergence signal.")
     parser.add_argument("--transport", type=Path, required=True,
                         help="This pass's transport_solution.h5.")
@@ -90,6 +91,8 @@ def main() -> None:
     parser.add_argument("--pressure-rel-tol", type=float, required=True,
                         help="Relative RMS tolerance on the final-vs-initial total pressure profile.")
     args = parser.parse_args()
+    if args.pressure_rel_tol <= 0.0:
+        parser.error(f"--pressure-rel-tol must be positive, got {args.pressure_rel_tol}.")
 
     status = {"converged": pressure_converged(args.transport, rel_tol=args.pressure_rel_tol)}
     args.signal.parent.mkdir(parents=True, exist_ok=True)
