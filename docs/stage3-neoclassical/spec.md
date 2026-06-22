@@ -108,81 +108,80 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 **Required input fields** :
 
 **Geometry & Equilibrium:**
-- `geometryScheme`: geometry model/file mode. Common values: `1` (from `wout_*.nc`), `4` (VMEC from given file), `11/12` (analytic/tokamak).
-- `equilibriumFile` (or CLI override `--wout-path` / `--equilibrium-file`): path to `wout_*.nc` or Boozer file.
+- `geometryScheme`: geometry model/file mode. Common values: `1` (analytic tokamak-like model), `4` (analytic W7-X-like reduced model), `5` (VMEC from `wout_*.nc` or compatible VMEC equilibrium file), `11/12` (Boozer `.bc` file, with / without stellarator symmetry).
+- `equilibriumFile` (or CLI override `--wout-path` / `--equilibrium-file`): path to the equilibrium file required by the selected geometry mode. For `geometryScheme=5`, this is a VMEC `wout` file. For `geometryScheme=11/12`, this is a Boozer `.bc` file.
+- `inputRadialCoordinate`: selects which radial coordinate is used to identify the flux surface in the geometry/equilibrium input. This is used for file-backed geometry modes such as `geometryScheme=5` and `11/12`, and common choices are `0/1/2/3` for `psiHat` / `psiN` / `rHat` / `rN`.
+- `inputRadialCoordinateForGradients`: selects which radial coordinate is used for profile and electrostatic-potential gradients. Common choices are `0/1/2/3` for gradients with respect to `psiHat` / `psiN` / `rHat` / `rN`.
 
 **Species Definition:**
-- `Zs`: array of ion charges (one per species; electrons implicit).
+The definitions below are for default values of 'nu_n', 'Delta' and 'alpha'
+- `Zs`: array species charges normalized to proton charge.
 - `mHats`: array of mass ratios ($m_s / m_{\text{ref}}$, typically deuterium = 2).
-- `nHats`: array of density values in some normalization (density of each species).
-- `THats`: array of temperature values (temperature of each species).
+- `nHats`: array of species density values in $10^20 m^{3}$.
+- `THats`: array of species temperature values in $keV$.
 
 **Density & Temperature Gradients:**
-- `dnHatdpsiN` or `dnHatdpsiHat`: density gradient profile w.r.t. normalized poloidal/toroidal flux.
-- `dTHatdpsiN` or `dTHatdpsiHat`: temperature gradient profile (one or both species, typically electrons set to match physics).
+- `dnHatdpsiHat`, `dnHatdpsiN`, `dnHatdrHat`, or `dnHatdrN`: density gradient profile, with the active variable selected by `inputRadialCoordinateForGradients`.
+- `dTHatdpsiHat`, `dTHatdpsiN`, `dTHatdrHat`, or `dTHatdrN`: temperature gradient profile, with the active variable selected by `inputRadialCoordinateForGradients`.
 
 **Electric Field or Potential Gradient:**
-- One of: `dPhiHatdpsiN` (electrostatic potential gradient), `dPhiHatdpsiHat`, or `Er` (radial electric field). Which one is specified by `inputRadialCoordinateForGradients`.
+- One of: `dPhiHatdpsiHat`, `dPhiHatdpsiN`, `dPhiHatdrHat`, `dPhiHatdrN`, or `Er` (radial electric field), with the active gradient coordinate selected by `inputRadialCoordinateForGradients`.
 
 **Physics Controls:**
-- `RHSMode`: collision operator mode. `1` = standard solve (output fluxes); `2` = transport matrix assembly; `3` = linear response.
-- `collisionOperator`: collision model. Common: `0` (no collisions), `4` (full Lorentz with energy diffusion).
-- `constraintScheme`: constraint type for energy/particle conservation. Common: `0` (none), `1` (force density conservation).
-- `Delta`: collision frequency normalization factor.
-- `nu_n`: collision frequency in units of $v_{\text{th}} / (a_{\text{ref}} B_{\text{ref}})$.
+- `RHSMode`: right-hand-side / solve mode. `1` = standard drift-kinetic solve for fluxes and flows, `2` = solve multiple right-hand sides to assemble the transport matrix, `3` = monoenergetic transport-coefficient mode.
+- `collisionOperator`: collision model. Common values are `0` (full linearized Fokker-Planck operator) and `1` (pitch-angle-scattering / Lorentz operator without the momentum-conserving field term).
+- `constraintScheme`: constraint choice used to remove null-space / gauge freedom in the kinetic solve. Common values are `-1` (automatic, generally recommended), `0` (no constraints), `1` (enforce flux-surface-averaged density and pressure constraints), and `2` (enforce the $L=0$ constraint at each energy grid point).
+- `Delta`: normalized gyroradius scale, roughly $\rho_*$ at the chosen reference parameters.
+- `alpha`: electrostatic normalization factor, $e \bar{\Phi} / \bar{T}$, used to nondimensionalize `Er`, `Phi`, and `dPhiHatd*` quantities.
+- `nu_n`: normalized collisionality used in the standard kinetic solve (`RHSMode=1`, and commonly also transport-matrix `RHSMode=2`). In `RHSMode=3`, the monoenergetic collisionality is instead specified through `nuPrime`.
 
 **Resolution Controls:**
 - `Ntheta`: poloidal grid points.
 - `Nzeta`: toroidal grid points.
 - `Nxi`: pitch-angle grid points.
 - `Nx`: energy grid points.
-- Solver tolerances: `iota_tolerance`, `psiN_precision`, `solverTolerance`, `linearSolverTolerance` (typically $10^{-6}$ to $10^{-10}$).
+- Solver tolerance: `solverTolerance` (commonly around $10^{-6}$ to $10^{-10}$ depending on the case and solver path). In this `sfincs_jax` checkout, this is the main named tolerance parameter exposed in the input namelist for the linear solve.
 
 **Optional input fields** :
 
 **Phi1 / Electrostatic Effects:**
-- `includePhi1`: `.true./.false.` — include first-order potential perturbations.
-- `includePhi1InKineticEquation`: whether to couple Phi1 into governing equation.
-- `includePhi1InCollisionOperator`: whether to include Phi1 in collision integrand.
-- `readExternalPhi1`: read precomputed Phi1 from external file instead of solving.
+- `includePhi1`: `.true./.false.` — supported in this `sfincs_jax` checkout; enables the Phi1 / quasineutrality / lambda block.
+- `includePhi1InKineticEquation`: supported, but only as the current parity-first / frozen-linearization implementation of Phi1 coupling in the kinetic equation.
+- `includePhi1InCollisionOperator`: supported for the Fokker-Planck (`collisionOperator = 0`) path, and requires `includePhi1 = .true.` plus `includePhi1InKineticEquation = .true.`.
+- `readExternalPhi1`: recognized in the input surface, but not currently supported end-to-end in this `sfincs_jax` checkout.
 
-**Ambipolar / Electric Field Scan:**
-- `ambipolarSolve`: `.true./.false.` — solve for $E_r$ subject to ambipolarity constraint.
-- `Er_min`, `Er_max`: range of $E_r$ to scan across (when ambipolarSolve = .false.).
-- `Ertolerance`: convergence criterion for ambipolar solve.
 
-**Numerical Methods:**
-- `derivativeScheme`: finite-difference order (`1`, `2`, `4`, `6`).
-- `preconditionerScheme`: preconditioner type for iterative solver.
-- `usePETSc`: use PETSc-based solve (vs. direct UMF PACK).
-- `withoutSolver`: assemble operator but skip solve (matrix-free diagnostic).
+
 
 **Distribution Function Export:**
 - `export_full_f`: `.true./.false.` — write full (Maxwellian + perturbation) distribution to output.
 - `export_delta_f`: `.true./.false.` — write perturbed part of distribution separately.
-- `export_f_theta`, `export_f_zeta`, `export_f_xi`, `export_f_x`: which grids to sample when exporting $f$.
+- `export_f_theta_option`, `export_f_zeta_option`, `export_f_xi_option`, `export_f_x_option`: select how the export grid is chosen for each coordinate.
+- `export_f_theta`, `export_f_zeta`, `export_f_xi`, `export_f_x`: explicit coordinate values used when the corresponding export option selects custom sampling.
+
+
 
 **All Input Fields**:
 
 | Field | Type | Default | Required | Condition | Meaning | Units | 
 |---|---|---|---|---|-----------------|----|
-| RHSMode | integer | 1 | No (defaulted) | Always | Option related to the number of right-hand sides (i.e |
+| RHSMode | integer | 1 | No (defaulted) | Always | Solve mode: `1` = standard drift-kinetic solve, `2` = transport-matrix assembly from multiple right-hand sides, `3` = monoenergetic transport-coefficient mode |
 | outputFileName | string | ``sfincsOutput.h5'' | No (defaulted) | Always | Name which will be used for the HDF5 output file |
 | saveMatlabOutput | Boolean | .false. | No (defaulted) | Always | If this switch is set to true, Matlab m-files are created which store the system matrix, right-hand side, and solution vector |
 | MatlabOutputFilename | string | ``sfincsMatrices'' | Conditional | Only when saveMatlabOutput == .true.. | Start of the filenames which will be used for Matlab output. |
 | saveMatricesAndVectorsInBinary | Boolean | .false. | No (defaulted) | Always | If this switch is set to true, the matrix, right-hand-side, and solution vector of the linear system will be saved in PETSc's binary format |
 | binaryOutputFilename | string | ``sfincsBinary'' | Conditional | Only when saveMatricesAndVectorsInBinary == .true.. | Start of the filenames which will be used for binary output of the system matrices, right-hand-side vectors, and solution vectors |
 | solveSystem | Boolean | .true. | No (defaulted) | Always | If this parameter is false, the system of equations will not actually be solved |
-| ambipolarSolve | Boolean | .false. | Conditional | When RHSMode==1, 4, or 5. | When .true., a root finding method will be used to find the ambipolar Er |
+| ambipolarSolve | Boolean | .false. | Conditional | Primarily when `RHSMode == 1` | Legacy / upstream namelist-driven ambipolar root solve for `Er`; in this checkout, the more practical public workflow is usually the CLI `scan-er` + `ambipolar-solve` path |
 | NEr\_ambipolarSolve | integer | 20 | Conditional | When ambipolarSolve == .true.. | Maximum number of solves to allow while finding the ambipolar Er. |
 | Er\_search\_tolerance\_dx | real | 1.d-8 | Conditional | When ambipolarSolve == .true. and ambipolarSolveOption/=2. | Tolerance used for ambipolar solve |
 | Er\_search\_tolerance\_f | real | 1.d-10 | Conditional | When ambipolarSolve == .true.. | Tolerance used for ambipolar solve |
 | ambipolarSolveOption | integer | 1 | Conditional | When ambipolarSolve == .true. | Indicates which root solving algorithm to use for ambipolar solve |
 | Er\_min | real | -100 | Conditional | When ambipolarSolve == .true. and ambipolarSolveOption /= 3. | Minimum value of Er used to bracket the ambipolar root. |
 | Er\_max | real | 100 | Conditional | When ambipolarSolve == .true. and ambipolarSolveOption /= 3. | Maximum value of Er used to bracket the ambipolar root. |
-| geometryScheme | integer | 1 | No (defaulted) | Always | How the magnetic geometry is specified |
-| inputRadialCoordinate | integer | 3 | Conditional | When geometryScheme == 1, 5, 11, or 12 | Which radial coordinate to use to specify the flux surface |
-| inputRadialCoordinateForGradients | integer | 4 | Conditional | Whenever RHSMode==1. | Which radial coordinate to specify input gradients |
+| geometryScheme | integer | 1 | No (defaulted) | Always | How the magnetic geometry is specified. In this `sfincs_jax` checkout, the implemented modes are `1`, `2`, `4`, `5`, `11`, and `12` |
+| inputRadialCoordinate | integer | 3 | Conditional | When the selected geometry needs a flux-surface choice | Which radial coordinate is used to select the target flux surface (`psiHat`, `psiN`, `rHat`, or `rN`) |
+| inputRadialCoordinateForGradients | integer | 4 | Conditional | Whenever profile / electric-field gradients are specified | Which radial coordinate is used for input gradients. `0/1/2/3/4` correspond to `psiHat`, `psiN`, `rHat`, `rN`, and `Er`-based input |
 | B0OverBBar | real | 1.0 | Conditional | Only when geometryScheme == 1 | Magnitude of (0,0) Boozer harmonic of B field |
 | GHat | real | 3.7481 | Conditional | Only when geometryScheme == 1 | Poloidal current outside flux surface |
 | IHat | real | 0.0 | Conditional | Only when geometryScheme == 1 | Toroidal current inside flux surface |
@@ -192,9 +191,6 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 | equilibriumFile | string | ``'' | Conditional | Only when geometryScheme == 5, 11, or 12 | Filename for magnetic equilibrium (vmec wout or .bc) |
 | VMECRadialOption | integer | 1 | Conditional | Only when geometryScheme == 5, 11 or 12 | Controls interpolation vs nearest surface lookup |
 | rippleScale | real | 1.0 | Conditional | Only when geometryScheme == 5 | Scales VMEC geometry components |
-| boozer\_bmnc | 2D array of reals | 0 | Conditional | Only when geometryScheme == 13 | Fourier harmonics for B field in Boozer coords |
-| boozer\_bmns | 2D array of reals | 0 | Conditional | Only when geometryScheme == 13 | Fourier harmonics for B field in Boozer coords |
-| Nperiods | integer | 0 | Conditional | Only when geometryScheme == 13 | Number of toroidal periods |
 | Zs | 1D array of reals | 1.0 | No (defaulted) | Always | Charges of each species (proton units) |
 | mHats | 1D array of reals | 1.0 | No (defaulted) | Always | Masses of each species (reference mass units) |
 | nHats | 1D array of reals | 1.0 | Conditional | Whenever RHSMode == 1 | Densities of each species |
@@ -212,33 +208,33 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 | adiabaticMHat | real | 5.44617e-4 | Conditional | When includePhi1 == .true. and withAdiabatic == .true. | Mass of adiabatic species |
 | adiabaticNHat | real | 1.0 | Conditional | When includePhi1 == .true. and withAdiabatic == .true. | Density of adiabatic species |
 | adiabaticTHat | real | 1.0 | Conditional | When includePhi1 == .true. and withAdiabatic == .true. | Temperature of adiabatic species |
-| withNBIspec | Boolean | .false. | Conditional | When RHSMode == 1 and includePhi1 == .true. | Add NBI species to quasineutrality (not in DKE) |
+| withNBIspec | Boolean | .false. | Conditional | When `RHSMode == 1`, `includePhi1 == .true.`, `readExternalPhi1 == .false.`, and typically `quasineutralityOption == 1` | Add an NBI species to quasineutrality only, not to the kinetic equation |
 | NBIspecZ | real | 1.0 | Conditional | When withNBIspec== .true. | Charge of NBI species |
 | NBIspecNHat | real | 0.0 | Conditional | When withNBIspec== .true. | Density of NBI species |
-| Delta | real | 4.5694e-3 | Conditional | Whenever RHSMode == 1 | Collision frequency normalization factor |
-| alpha | real | 1.0 | Conditional | Whenever RHSMode == 1 | Collision frequency proportionality constant |
+| Delta | real | 4.5694e-3 | Conditional | Standard kinetic / transport workflows | Normalized gyroradius scale, roughly the reference `rho_*` used in the SFINCS normalization |
+| alpha | real | 1.0 | Conditional | Standard kinetic / transport workflows | Electrostatic normalization factor, approximately `e * PhiBar / TBar`; it sets the normalization used for `Phi`, `Er`, and `dPhiHatd*` quantities |
 | nuPrime | real | 1.0 | Conditional | Only when RHSMode == 3 | Dimensionless collisionality for monoenergetic coeffs |
 | EStar | real | 0.0 | Conditional | Only when RHSMode == 3 | Normalized radial E field for monoenergetic coeffs |
-| EParallelHat | real | 0.0 | Conditional | Whenever RHSMode == 1 | Inductive parallel electric field |
+| EParallelHat | real | 0.0 | Conditional | Standard kinetic solves | Inductive / applied parallel electric field in SFINCS normalization |
 | dPhiHatdpsiHat | real | 0.0 | Conditional | When inputRadialCoordinateForGradients == 0 | Electrostatic potential gradient w.r.t psiHat |
 | dPhiHatdpsiN | real | 0.0 | Conditional | When inputRadialCoordinateForGradients == 1 | Electrostatic potential gradient w.r.t psiN |
 | dPhiHatdrHat | real | 0.0 | Conditional | When inputRadialCoordinateForGradients == 2 | Electrostatic potential gradient w.r.t rHat |
 | dPhiHatdrN | real | 0.0 | Conditional | When inputRadialCoordinateForGradients == 3 | Electrostatic potential gradient w.r.t rN |
 | Er | real | 0.0 | Conditional | When inputRadialCoordinateForGradients == 4 | Radial electric field |
-| collisionOperator | integer | 0 | No (defaulted) | Always | Choice of collision operator (0=FP, 1=pitch-angle) |
+| collisionOperator | integer | 0 | No (defaulted) | Always | Choice of collision operator: `0` = full linearized Fokker-Planck, `1` = pitch-angle-scattering / Lorentz model |
 | constraintScheme | integer | -1 | No (defaulted) | Always | Constraint control for null space and conservation |
 | includeXDotTerm | Boolean | .true. | Conditional | When radial E field is nonzero | Include speed-change term from E_r |
 | includeElectricFieldTermInXiDot | Boolean | .true. | Conditional | When radial E field is nonzero | Include pitch-angle-change term from E_r |
-| useDKESExBDrift | Boolean | .false. | Conditional | When radial E field is nonzero | Use DKES E×B drift formula |
+| useDKESExBDrift | Boolean | .false. | Conditional | When radial electric-field terms are active | Use the DKES-style `E x B` drift formula rather than the full-trajectory form |
 | includePhi1 | Boolean | .false. | Conditional | Whenever RHSMode == 1 | Include first-order potential Phi1 |
-| readExternalPhi1 | Boolean | .false. | Conditional | When includePhi1 == .true. | Read Phi1Hat from external HDF5 file |
-| externalPhi1Filename | string | ``externalPhi1.h5'' | Conditional | When readExternalPhi1 == .true. | HDF5 file to read Phi1Hat from |
+| readExternalPhi1 | Boolean | .false. | Conditional | When includePhi1 == .true. | Recognized input switch for reading `Phi1Hat` from an external file, but not currently supported end-to-end in this `sfincs_jax` checkout |
+| externalPhi1Filename | string | ``externalPhi1.h5'' | Conditional | When readExternalPhi1 == .true. | Filename for the external `Phi1Hat` input in that same recognized-but-not-fully-supported path |
 | includePhi1InKineticEquation | Boolean | .true. | Conditional | When includePhi1 == .true. | Couple Phi1 into kinetic equation |
 | includePhi1InCollisionOperator | Boolean | .false. | Conditional | When includePhi1 == .true. | Include Phi1 in collision operator |
 | quasineutralityOption | integer | 1 | Conditional | When includePhi1 == .true. and readExternalPhi1 == .false. | Choice of quasineutrality equation (1 or 2) |
 | includeTemperatureEquilibrationTerm | Boolean | .false. | Conditional | Whenever RHSMode == 1 | Include temperature equilibration term |
 | magneticDriftScheme | integer | 0 | Conditional | Whenever RHSMode == 1 | Control poloidal/toroidal magnetic drifts |
-| EParallelHatSpec | 1D array of reals | 0.0 | Conditional | When nonzero and RHSmode==1 | Parallel forces from collisions with fast ions |
+| EParallelHatSpec | 1D array of reals | 0.0 | Conditional | When used in kinetic solves | Species-dependent parallel forcing / drive term; this is not one of the most commonly used public `sfincs_jax` input paths |
 | Ntheta | integer | 15 | No (defaulted) | Always | Poloidal grid points |
 | Nzeta | integer | 15 | No (defaulted) | Always | Toroidal grid points per period |
 | Nxi | integer | 16 | No (defaulted) | Always | Pitch-angle grid (Legendre polynomials) |
@@ -250,9 +246,9 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 | forceOddNthetaAndNzeta | Boolean | .true. | No (defaulted) | Always | Force odd Ntheta and Nzeta |
 | thetaDerivativeScheme | integer | 2 | No (defaulted) | Always | Poloidal discretization (0=spectral, ...) |
 | zetaDerivativeScheme | integer | 2 | No (defaulted) | Always | Toroidal discretization (0=spectral, ...) |
-| ExBDerivativeSchemeTheta | integer | 0 | Conditional | When radial E field is nonzero | E×B drift upwinding in theta |
-| ExBDerivativeSchemeZeta | integer | 0 | Conditional | When radial E field is nonzero | E×B drift upwinding in zeta |
-| magneticDriftDerivativeScheme | integer | 3 | Conditional | When magneticDriftScheme ≠ 0 | Magnetic drift upwinding |
+| ExBDerivativeSchemeTheta | integer | 0 | Conditional | When radial electric-field terms are active | `E x B` drift upwinding / derivative scheme in `theta` |
+| ExBDerivativeSchemeZeta | integer | 0 | Conditional | When radial electric-field terms are active | `E x B` drift upwinding / derivative scheme in `zeta` |
+| magneticDriftDerivativeScheme | integer | 3 | Conditional | When `magneticDriftScheme != 0` | Magnetic-drift derivative / upwinding scheme |
 | xGridScheme | integer | 5 | Conditional | When RHSMode == 1 or 2 | Speed discretization scheme |
 | xPotentialsGridScheme | integer | 2 | Conditional | When RHSMode == 1 or 2 and xGridScheme == 5 | Rosenbluth potential grid scheme |
 | xDotDerivativeScheme | integer | 0 | Conditional | When includeXDotTerm == .true. | Collisionless differentiation matrix |
@@ -260,19 +256,6 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 | whichParallelSolverToFactorPreconditioner | integer | 1 | No (defaulted) | Always | Solver for preconditioner factorization |
 | PETSCPreallocationStrategy | integer | 1 | No (defaulted) | Always | Memory allocation strategy for matrix |
 | reusePreconditioner | Boolean | .true. | Conditional | When includePhi1 == .true. | Reuse preconditioner across iterations |
-| adjointBootstrapOption | Boolean | .false. | Conditional | When RHSMode == 4 or 5 | Compute bootstrap current derivatives |
-| adjointRadialCurrentOption | Boolean | .false. | Conditional | When RHSMode == 4 or 5 | Compute radial current derivatives |
-| adjointTotalHeatFluxOption | Boolean | .false. | Conditional | When RHSMode == 4 or 5 | Compute total heat flux derivatives |
-| adjointHeatFluxOption | 1D array of booleans | .false. | Conditional | When RHSMode == 4 or 5 | Per-species heat flux derivatives |
-| adjointParticleFluxOption | 1D array of booleans | .false. | Conditional | When RHSMode == 4 or 5 | Per-species particle flux derivatives |
-| adjointParallelFlowOption | 1D array of booleans | .false. | Conditional | When RHSMode == 4 or 5 | Per-species flow derivatives |
-| discreteAdjointOption | boolean | .true. | Conditional | When RHSMode == 4 or 5 | Use discrete adjoint method |
-| nMaxAdjoint | integer | 0 | Conditional | When RHSMode == 4 or 5 | Max poloidal mode for adjoint |
-| mMaxAdjoint | integer | 0 | Conditional | When RHSMode == 4 or 5 | Max toroidal mode for adjoint |
-| nMinAdjoint | integer | 0 | Conditional | When RHSMode == 4 or 5 | Min poloidal mode for adjoint |
-| mMinAdjoint | integer | 0 | Conditional | When RHSMode == 4 or 5 | Min toroidal mode for adjoint |
-| debugAdjoint | boolean | .false. | Conditional | When RHSMode == 4 or 5 | Compare adjoint vs FD derivatives |
-| deltaLambda | real | 1.d-4 | Conditional | When debugAdjoint == .true. | Step size for forward-difference derivatives |
 | psiHat_wish | real | -1 | Conditional | When inputRadialCoordinate == 0 | Requested flux surface (psiHat) |
 | psiN_wish | real | 0.25 | Conditional | When inputRadialCoordinate == 1 | Requested flux surface (psiN) |
 | rHat_wish | real | -1 | Conditional | When inputRadialCoordinate == 2 | Requested flux surface (rHat) |
@@ -286,30 +269,28 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 | helicity_antisymm_n | integer | 0 | Conditional | Only when geometryScheme == 1 | Toroidal mode of antisymmetric variation |
 | VMEC_Nyquist_option | integer | 1 | Conditional | Only when geometryScheme == 5 | VMEC mode number handling |
 | min_Bmn_to_load | real | 0.0 | Conditional | When geometryScheme == 5, 11, or 12 | Filter cutoff for B field harmonics |
-| EParallelHatSpec_bcdatFile | string | ``'' | Conditional | When EParallelHatSpec nonzero | File with parallel force Fourier coeffs |
-| nu_n | real | 8.330e-3 | Conditional | Whenever RHSMode == 1 | Dimensionless collisionality |
-| include_fDivVE_term | Boolean | .false. | Conditional | Never | Obsolete parameter |
-| xGrid_k | integer | 0 | Conditional | When RHSMode == 1 or 2 and xGridScheme ∈ {1,2,5,6} | Orthogonal polynomial weight exponent |
+| nu_n | real | 8.330e-3 | Conditional | Standard kinetic / transport workflows (`RHSMode = 1`, and commonly `2`) | Normalized collisionality. In `RHSMode = 3`, `nu_n` is effectively overridden by `nuPrime` |
+| xGrid_k | integer | 0 | Conditional | When `RHSMode == 1 or 2` and `xGridScheme` is one of `{1,2,5,6}` | Orthogonal-polynomial weight exponent for the speed grid |
 | Nxi_for_x_option | integer | 1 | No (defaulted) | Always | How Nxi depends on speed |
-| preconditioner_species | integer | 1 | Conditional | When useIterativeLinearSolver == .true. and Nspecies ≥ 2 | Species coupling in preconditioner |
-| preconditioner_x | integer | 1 | Conditional | When useIterativeLinearSolver == .true. and RHSMode ∈ {1,2} | Speed coupling in preconditioner |
-| preconditioner_x_min_L | integer | 0 | Conditional | When preconditioner_x ≠ 0 | Legendre mode threshold for simplification |
+| preconditioner_species | integer | 1 | Conditional | When `useIterativeLinearSolver == .true.` and `Nspecies >= 2` | Species coupling retained in the preconditioner |
+| preconditioner_x | integer | 1 | Conditional | When `useIterativeLinearSolver == .true.` and `RHSMode` is one of `{1,2}` | Speed-grid coupling retained in the preconditioner |
+| preconditioner_x_min_L | integer | 0 | Conditional | When `preconditioner_x != 0` | Legendre-mode threshold for preconditioner simplification |
 | preconditioner_theta | integer | 0 | Conditional | When useIterativeLinearSolver == .true. | Theta coupling in preconditioner |
-| preconditioner_theta_min_L | integer | 0 | Conditional | When preconditioner_theta ≠ 0 | Legendre mode threshold for simplification |
+| preconditioner_theta_min_L | integer | 0 | Conditional | When `preconditioner_theta != 0` | Legendre-mode threshold for preconditioner simplification |
 | preconditioner_zeta | integer | 0 | Conditional | When useIterativeLinearSolver == .true. | Zeta coupling in preconditioner |
-| preconditioner_zeta_min_L | integer | 0 | Conditional | When preconditioner_zeta ≠ 0 | Legendre mode threshold for simplification |
+| preconditioner_zeta_min_L | integer | 0 | Conditional | When `preconditioner_zeta != 0` | Legendre-mode threshold for preconditioner simplification |
 | preconditioner_xi | integer | 1 | Conditional | When useIterativeLinearSolver == .true. | Pitch-angle coupling (0=full, 1=tridiag) |
 | preconditioner_magnetic_drifts_max_L | integer | 2 | Conditional | When useIterativeLinearSolver == .true. | Legendre mode cutoff for magnetic drift terms |
 | export_full_f | Boolean | .false. | No (defaulted) | Always | Export full distribution function |
 | export_delta_f | Boolean | .false. | No (defaulted) | Always | Export perturbed distribution function |
 | export_f_theta_option | integer | 2 | Conditional | When export_full_f or export_delta_f == .true. | Theta grid control for export |
 | export_f_zeta_option | integer | 2 | Conditional | When export_full_f or export_delta_f == .true. | Zeta grid control for export |
-| export_f_theta | 1D array of reals | 0.0 | Conditional | When export_f_theta_option ≠ default | Theta values for distribution export |
-| export_f_zeta | 1D array of reals | 0.0 | Conditional | When export_f_zeta_option ≠ default | Zeta values for distribution export |
+| export_f_theta | 1D array of reals | 0.0 | Conditional | When `export_f_theta_option` selects explicit / custom sampling | Theta values for distribution export |
+| export_f_zeta | 1D array of reals | 0.0 | Conditional | When `export_f_zeta_option` selects explicit / custom sampling | Zeta values for distribution export |
 | export_f_xi_option | integer | 1 | Conditional | When export_full_f or export_delta_f == .true. | Xi discretization for export |
 | export_f_xi | 1D array of reals | 0.0 | Conditional | When export_f_xi_option == 1 | Xi values for distribution export |
 | export_f_x_option | integer | 0 | Conditional | When export_full_f or export_delta_f == .true. | Speed grid control for export |
-| export_f_x | 1D array of reals | 1.0 | Conditional | When export_f_x_option ≠ default | Speed values for distribution export |
+| export_f_x | 1D array of reals | 1.0 | Conditional | When `export_f_x_option` selects explicit / custom sampling | Speed values for distribution export |
 
 #### Input Validation
 
@@ -318,7 +299,6 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 
 ### Output Specification
 
-Reference: `stellarator_io_reference.tex`, Section 3.5.
 
 **Primary output:** `sfincsOutput.h5` (HDF5)
 
@@ -330,7 +310,7 @@ Reference: `stellarator_io_reference.tex`, Section 3.5.
 | `FSABjHat` | solved runs | Flux-surface-averaged parallel current (bootstrap diagnostic) | Equilibrium/diagnostic coupling | `Hat` quantity (SFINCS normalized current) and flux-surface-averaged (`FSAB`) |
 | `FSABFlow` | solved runs | Flux-surface-averaged parallel flow by species | Diagnostic | SFINCS normalized flow; flux-surface-averaged (`FSA/FSAB`) |
 | `Phi1Hat` | when `includePhi1=.true.` | First-order electrostatic potential on `(theta,zeta)` grid | Diagnostic / analysis | `Hat` potential normalization ($\Phi_1$ normalized by $T_{\mathrm{ref}}/e$) |
-| `transportMatrix` | `RHSMode=2/3` with transport-matrix workflow | Transport matrix assembled across `whichRHS` solves | Analysis / reduced-model fitting | Mixed normalized transport coefficients in SFINCS internal normalization |
+| `transportMatrix` | `RHSMode=2/3` with `--compute-transport-matrix` transport-matrix workflow | Transport matrix assembled across `whichRHS` solves | Analysis / reduced-model fitting | Mixed normalized transport coefficients in SFINCS internal normalization |
 
 Normalization notes for output names:
 - Suffix `_vm` = magnetic-drift transport normalization; `_vd` = drift + `E\times B` transport normalization.
@@ -350,15 +330,16 @@ Common required metadata outputs:
 **Run Metadata:**
 - `Nspecies`: number of species in calculation.
 - `Ntheta`, `Nzeta`, `Nxi`, `Nx`: resolution settings echoed to output.
-- `RHSMode`: collision operator / solve mode used.
+- `RHSMode`: solve mode used.
 - `NIterations`: number of nonlinear iterations taken.
-- `elapsed time (s)`: total wall-clock time for solve.
+- `elapsed time (s)`: elapsed wall-clock time written in the transport-matrix workflow.
 
 **Species & Profile Information:**
 - `Zs`, `mHats`, `nHats`, `THats`: species charges, mass ratios, densities, temperatures (echoed from input).
-- `dnHatdpsiN`, `dTHatdpsiN`: gradient profiles used (coordinate-dependent form).
-- `psiN` or `psiHat`: radial coordinate array and conversion factors.
-- `iota`: rotational transform profile.
+- `dnHatdpsiHat`, `dnHatdpsiN`, `dnHatdrHat`, `dnHatdrN`: density-gradient values written in all supported radial-coordinate forms.
+- `dTHatdpsiHat`, `dTHatdpsiN`, `dTHatdrHat`, `dTHatdrN`: temperature-gradient values written in all supported radial-coordinate forms.
+- `psiHat`, `psiN`, `rHat`, `rN`: scalar flux-surface location values written in all supported radial-coordinate forms.
+- `iota`: rotational transform at the chosen flux surface.
 
 Common conditional physics outputs:
 
@@ -366,18 +347,18 @@ Common conditional physics outputs:
 - `particleFlux*`: neoclassical particle flux per species.
 - `heatFlux*`: neoclassical heat flux per species.
 - `momentumFlux*`: neoclassical parallel momentum flux.
-- `FSAFlow*`: flux-surface-averaged flows by species.
+- `FSABFlow` and `FSABFlow_vs_x`: flux-surface-averaged flows by species.
 
 **Flux-Surface Diagnostics:**
 - `FSABjHat`: flux-surface-averaged parallel current (bootstrap diagnostic).
 - `FSABFlow`: flux-surface-averaged parallel flow.
 - `jHat`, `flow`: local (non-flux-surface-averaged) parallel current and flow.
-- `densityPerturbation`, `pressurePerturbation`: linear perturbation amplitudes.
+- `densityPerturbation`, `pressurePerturbation`: moment diagnostics derived from the perturbed distribution.
 - `NTV`: neoclassical toroidal viscosity (when Phi1 included).
 
 **Classical Transport** (when included):
-- `classicalParticleFlux*`: classical (collisionless) particle flux estimate.
-- `classicalHeatFlux*`: classical heat flux.
+- `classicalParticleFluxNoPhi1_*`, `classicalHeatFluxNoPhi1_*`: static classical-flux diagnostics without Phi1 contributions.
+- `classicalParticleFlux_*`, `classicalHeatFlux_*`: per-iteration classical-flux diagnostics in the reported radial-coordinate variants.
 
 **Distribution Function Exports** (only when `export_full_f` or `export_delta_f` enabled):
 - `delta_f`: perturbation part of distribution function on grid (theta, zeta, xi, x).
@@ -385,8 +366,8 @@ Common conditional physics outputs:
 - `export_f_theta`, `export_f_zeta`, `export_f_xi`, `export_f_x`: parameter specification for export grid resolution.
 
 **Solver Diagnostics** (sfincs_jax-specific):
-- `linearSolver*`: residual norms, iteration counts, convergence flags (for iterative or direct solve).
-- `transportMatrix`: full matrix when `RHSMode=2/3` (analysis / reduced-model fitting).
+- `linearSolver*`: residual norms, iteration counts, convergence flags, and related solve metadata written for `RHSMode=1` output solves.
+- `transportMatrix`: full matrix when `RHSMode=2/3` is run with `--compute-transport-matrix`.
 - `QN_*` (conditional, env var `SFINCS_JAX_WRITE_QN_DIAGNOSTICS`): debug terms from quasineutrality solve.
 
 **Handoff to `Trinity3D`:** The `Trinity3D` adapter reads:
