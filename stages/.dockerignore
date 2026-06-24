@@ -15,8 +15,3 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-
-# Stage runtime I/O: bind-mounted at run time, not needed in the image.
-# Keeping them out of the build context keeps images small.
-stage*/input/
-stage*/output/

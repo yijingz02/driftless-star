@@ -300,7 +300,9 @@ The definitions below are for default values of 'nu_n', 'Delta' and 'alpha'
 ### Output Specification
 
 
-**Primary output:** `sfincsOutput.h5` (HDF5)
+**Forward-chain handoff:** `sfincs_jax_flux_profiles.h5` (HDF5) -- aggregated flux profiles (Gamma, Q, Upar vs radius) consumed by `NEOPAX` (Stage 5).
+
+**Native SFINCS output (per surface):** `sfincsOutput.h5` (HDF5) -- the native solver file. The `sfincs_jax` radial scan writes one per flux surface and aggregates them into the handoff above; the standalone `SFINCS` (Fortran) binary writes it directly. Its fields:
 
 | Field | Availability | Meaning | Primary Use | Normalization | Units |
 |-------|--------------|---------|-------------|---------------|----|
@@ -445,10 +447,10 @@ pixi run stage-3-sfincs
 ```
 
 > [!NOTE]
-> The pixi task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec` first. The namelist's `equilibriumFile` field is retained as a fallback for the `sfincs_fortran` backend and for direct `sfincs_jax` invocations that omit `--wout-path`.
+> The pixi task and the Snakemake `stage3_sfincs` rule both pass the wout path to `sfincs_jax` via `--wout-path`. Populate `outputs/quick_run/stage1_equilibrium/` by running `pixi run stage-1-vmec` first. The namelist's `equilibriumFile` field is retained as a fallback for the `sfincs_fortran` backend and for direct `sfincs_jax` invocations that omit `--wout-path`.
 
-**Input:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` + `stages/stage3-neoclassical/input/input.HSX_vacuum_ns201_quickrun`
-**Output:** `stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5`
+**Input:** `outputs/quick_run/stage1_equilibrium/wout_HSX_vacuum_ns201_quickrun.nc` + `inputs/quick_run/sfincs_input.HSX_vacuum_ns201_quickrun`
+**Output:** `outputs/quick_run/stage3_neoclassical/sfincs_jax_flux_profiles.h5`
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
@@ -458,10 +460,10 @@ See `docs/mvp-pipeline.md` for full I/O details.
 pixi run stage-3-sfincs-fortran
 ```
 
-Alternative implementation to `sfincs_jax`. Consumes the same input namelist and writes to the same `sfincsOutput.h5` path; the task stages the namelist as `input.namelist` in the output directory before invocation because the Fortran binary reads that filename from its working directory.
+Alternative implementation to `sfincs_jax`. Consumes the same input namelist and writes the native `sfincsOutput.h5`, a different file from the `sfincs_jax_flux_profiles.h5` forward-chain handoff and not wired into the Snakemake forward pass; the task stages the namelist as `input.namelist` in the output directory before invocation because the Fortran binary reads that filename from its working directory.
 
 **Input:** same as `sfincs_jax` above.
-**Output:** `stages/stage3-neoclassical/output/sfincsOutput_quickrun.h5` (overwrites `sfincs_jax`'s output if both are run against the same directory).
+**Output:** `outputs/quick_run/stage3_neoclassical/sfincsOutput.h5` (the native SFINCS file, separate from the `sfincs_jax` handoff).
 
 See `docs/mvp-pipeline.md` for full I/O details.
 

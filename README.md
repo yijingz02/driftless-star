@@ -115,15 +115,29 @@ Snakemake DAG, end-to-end tests, and publishing. Details in the [Guide](docs/gui
 
 ## Usage
 
-> [!TODO]
-> Document pipeline usage once stages are operational.
+A *run* is a folder under `inputs/` holding its run config (`config.yaml`) and every stage input. A fresh clone ships one ready-to-run example, `inputs/quick_run/`:
+
+```
+pixi run -e pipeline snakemake --configfile inputs/quick_run/config.yaml --cores 4
+```
+
+All artifacts land under `outputs/<run>/stageN_<name>/`, one directory per stage (`outputs/` is gitignored). `common_input.toml` in the run folder is the shared transport config read by Stages 3, 4, and 5.
+
+To define your own run, copy the example, repoint `input_dir`/`output_dir`, and edit the inputs:
+
+```
+cp -r inputs/quick_run inputs/my_run
+# in inputs/my_run/config.yaml, set input_dir: inputs/my_run and output_dir: outputs/my_run,
+# then edit the boundary, profiles, and resolution as needed
+pixi run -e pipeline snakemake --configfile inputs/my_run/config.yaml --cores 4
+```
 
 ### Visualize the pipeline graph
 
 Render the file-flow graph (files as nodes, rules as edges) **including the closed-loop post-processing step** by targeting the convergence signal file:
 
 ```
-pixi run -e pipeline bash -c 'snakemake --filegraph stages/stage5-post-processing/output/HSX_vacuum_ns201_quickrun/converge_status.json | dot -Tpdf > docs/figs/stellaforge_filegraph.pdf'
+pixi run -e pipeline bash -c 'snakemake --filegraph outputs/quick_run/stage5_post_processing/converge_status.json --configfile inputs/quick_run/config.yaml | dot -Tpdf > docs/figs/stellaforge_filegraph.pdf'
 ```
 
 Omit the target to graph the plain forward pass (stops at Stage 5). Needs a one-time `pixi run -e pipeline dot -c`; see [docs/mvp-pipeline.md](docs/mvp-pipeline.md#visualizing-the-file-flow-graph) for PNG/SVG and `--rulegraph`/`--dag` variants.
@@ -132,7 +146,7 @@ Omit the target to graph the plain forward pass (stops at Stage 5). Needs a one-
 git clone https://github.com/driftless-star/driftless-star.git
 cd driftless-star
 git submodule update --init --recursive
-snakemake --sdm docker --configfile config.yaml
+snakemake --sdm docker --configfile inputs/quick_run/config.yaml
 docker pull ghcr.io/driftless-star/driftless-star:stage-1-vmec-cpu
 -->
 

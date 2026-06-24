@@ -1,18 +1,19 @@
 # driftless-star MVP Snakemake workflow
 
-from src import stage3, stage4, stage5
+from src import stage3_helper, stage4_helper, stage5_helper
+from src.utils import resolve_pipeline_paths, RESOLVED_COMMON_CONFIG
 
-configfile: "config.yaml"
+# Require an explicit run config
+if not config:
+    raise ValueError(
+        "No config loaded. Pass --configfile inputs/<run>/config.yaml "
+        "(e.g. snakemake --configfile inputs/quick_run/config.yaml --cores 4)."
+    )
+_missing = [k for k in ("run_name", "input_dir", "output_dir", "filenames") if k not in config]
+if _missing:
+    raise ValueError(f"config is missing required key(s): {_missing}.")
 
 RUN_NAME = config["run_name"]
-# Substitute {run_name} into each directory value; literal paths pass through unchanged.
-DIRS = {k: v.format(run_name=RUN_NAME) for k, v in config["directories"].items()}
-FILES = config["filenames"]
-
-
-# Substitute {run_name} into the filename for `key`; literal names pass through unchanged.
-def filename(key):
-    return FILES[key].format(run_name=RUN_NAME)
 
 DEVICE = config.get("device", "cpu")
 if DEVICE not in ("cpu", "gpu"):
@@ -41,29 +42,34 @@ shell.executable("bash")
 # does not look successful just because tee exited 0.
 shell.prefix("set -o pipefail; ")
 
-S1_INPUT  = f"{DIRS['stage1_input']}/{filename('s1_input')}"
-S1_OUTPUT = f"{DIRS['stage1_output']}/{filename('s1_output')}"
-S2_OUTPUT = f"{DIRS['stage2_output']}/{filename('s2_output')}"
+P = resolve_pipeline_paths(config)
+S1_INPUT  = P["s1_input"]
+S1_OUTPUT = P["s1_output"]
+S2_OUTPUT = P["s2_output"]
+S3_CONFIG = P["s3_config"]
+S3_OUTPUT = P["s3_output"]
+S4_CONFIG = P["s4_config"]
+S4_OUTPUT = P["s4_output"]
+S5_CONFIG = P["s5_config"]
+S5_OUTPUT = P["s5_output"]
+S5_SIGNAL = P["s5_signal"]
+S1_FEEDBACK = P["s1_feedback"]
 
 STAGE3_CFG = config["stage3"]["sfincs_jax"]
-S3_CONFIG  = f"{DIRS['stage3_input']}/{filename('s3_config')}"
-S3_OUTPUT  = f"{DIRS['stage3_output']}/{filename('s3_output')}"
-
 STAGE4_CFG = config["stage4"]["spectrax_gk"]
-S4_CONFIG  = f"{DIRS['stage4_input']}/{filename('s4_config')}"
-S4_OUTPUT  = f"{DIRS['stage4_output']}/{filename('s4_output')}"
 
-S5_CONFIG  = f"{DIRS['stage5_input']}/{filename('s5_config')}"
-S5_OUTPUT  = f"{DIRS['stage5_output']}/{filename('s5_output')}"
-S5_SIGNAL  = f"{DIRS['stage5_post_processing_output']}/{filename('s5_signal')}"
+# Stage 5 post-processing convergence threshold (see the `convergence` block in inputs/<run>/config.yaml).
+PRESSURE_REL_TOL = config.get("convergence", {}).get("pressure_rel_tol", 1.0e-2)
 
-stage5.prepare_neopax_config(
-    s5_config=S5_CONFIG,
-    s5_output_dir=DIRS["stage5_output"],
+# Write a path-resolved copy of the NEOPAX template under outputs/ and run that (template untouched).
+stage5_helper.prepare_neopax_config(
+    s5_config_template=S5_CONFIG,
+    s5_resolved_config=P["s5_resolved_config"],
     s1_output=S1_OUTPUT,
     s2_output=S2_OUTPUT,
     s3_output=S3_OUTPUT,
     s4_output=S4_OUTPUT,
+    s5_output_dir=P["stage5_dir"],
 )
 
 
@@ -75,16 +81,16 @@ rule all:
 rule stage1_vmec:
     input:  S1_INPUT
     output: S1_OUTPUT
-    log:    f"{DIRS['stage1_output']}/{RUN_NAME}.log"
+    log:    f"{P['stage1_dir']}/{RUN_NAME}.log"
     shell:
         f"{DOCKER_PREFIX} {STAGE1_IMG} "
-        f"vmec_jax {{input}} --outdir {DIRS['stage1_output']}"
+        f"vmec_jax {{input}} --output {{output}}"
         " 2>&1 | tee {log}"
 
 rule stage2_boozer:
     input:  S1_OUTPUT
     output: S2_OUTPUT
-    log:    f"{DIRS['stage2_output']}/{RUN_NAME}.log"
+    log:    f"{P['stage2_dir']}/{RUN_NAME}.log"
     shell:
         f"{DOCKER_PREFIX} {STAGE2_IMG} "
         "python stages/stage2-boozer/run_boozer.py --wout {input} --output {output}"
@@ -94,17 +100,17 @@ rule stage3_sfincs:
     input:
         config_file = S3_CONFIG,
         wout        = S1_OUTPUT,
-        neopax_config = S5_CONFIG,
+        common_config = S5_CONFIG,
     output:
         S3_OUTPUT,
     log:
-        f"{DIRS['stage3_output']}/{RUN_NAME}.log"
+        f"{P['stage3_dir']}/{RUN_NAME}.log"
     shell:
-        stage3.radial_scan_cmd(
+        stage3_helper.radial_scan_cmd(
             docker_prefix=DOCKER_PREFIX,
             image=STAGE3_JAX_IMG,
             stage_cfg=STAGE3_CFG,
-            output_dir=DIRS["stage3_output"],
+            output_dir=P["stage3_dir"],
             device=DEVICE,
         ) + " 2>&1 | tee {log}"
 
@@ -113,17 +119,17 @@ rule stage4_spectrax:
         config_file = S4_CONFIG,
         wout        = S1_OUTPUT,
         boozer      = S2_OUTPUT,
-        neopax_config = S5_CONFIG,
+        common_config = S5_CONFIG,
     output:
         S4_OUTPUT,
     log:
-        f"{DIRS['stage4_output']}/{RUN_NAME}.log"
+        f"{P['stage4_dir']}/{RUN_NAME}.log"
     shell:
-        stage4.radial_scan_cmd(
+        stage4_helper.radial_scan_cmd(
             docker_prefix=DOCKER_PREFIX,
             image=STAGE4_IMG,
             stage_cfg=STAGE4_CFG,
-            output_dir=DIRS["stage4_output"],
+            output_dir=P["stage4_dir"],
             device=DEVICE,
         ) + " 2>&1 | tee {log}"
 
@@ -137,31 +143,25 @@ rule stage5_neopax:
     output:
         S5_OUTPUT,
     log:
-        f"{DIRS['stage5_output']}/{RUN_NAME}.log"
+        f"{P['stage5_dir']}/{RUN_NAME}.log"
     shell:
         f"{DOCKER_PREFIX} {STAGE5_IMG} "
-        f"sh -c \"cd {DIRS['stage5_input']} && neopax {filename('s5_config')}\""
+        f"sh -c \"cd {P['stage5_dir']} && neopax {RESOLVED_COMMON_CONFIG}\""
         " 2>&1 | tee {log}"
 
-# Stage 5 Post-Processing closes the optimization loop and writes a convergence signal.
-# The new Stage 1 input (S1_INPUT) is UNDECLARED to prevent making the DAG cyclic.
-# `rule all` stays S5_OUTPUT, so a plain `snakemake` remains a pure, non-mutating forward pass.
+# Stage 5 post-processing closes the optimization loop and writes a convergence signal.
+# The evolved Stage 1 boundary is written under outputs/ (S1_FEEDBACK), never onto the
+# committed input. `rule all` stays S5_OUTPUT, so a plain `snakemake` is a pure forward pass.
 rule stage5_post_processing:
     input:  S5_OUTPUT
-    output: S5_SIGNAL
-    log:    f"{DIRS['stage5_post_processing_output']}/{RUN_NAME}.log"
+    output:
+        signal   = S5_SIGNAL,
+        feedback = S1_FEEDBACK,
+    log:    f"{P['stage5_post_dir']}/{RUN_NAME}.log"
     shell:
         f'{DOCKER_PREFIX} {STAGE5_IMG} sh -c "'
         'python stages/stage5-post-processing/fit_vmec_pressure_from_transport_h5.py '
-        f'write-input {{input}} {S1_INPUT} && '
+        f'write-input {{input}} {S1_INPUT} --output-input {{output.feedback}} && '
         'python stages/stage5-post-processing/stage5_post_processing.py '
-        '--transport {input} --signal {output}"'
+        f'--transport {{input}} --signal {{output.signal}} --pressure-rel-tol {PRESSURE_REL_TOL}"'
         " 2>&1 | tee {log}"
-
-rule clean:
-    shell:
-        f"""
-        rm -rf {DIRS['stage1_output']} {DIRS['stage2_output']} \
-               {DIRS['stage3_output']} {DIRS['stage4_output']} \
-               {DIRS['stage5_output']} {DIRS['stage5_post_processing_output']}
-        """

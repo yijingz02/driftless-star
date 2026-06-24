@@ -72,11 +72,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT_DIR = Path(__file__).resolve().parent
 STAGES_DIR = SCRIPT_DIR.parent
 
-DEFAULT_NEOPAX_CONFIG = (
-    STAGES_DIR / "stage5-transport" / "input" / "Solve_Transport_equations_noHe_radau_HSX_quickrun.toml"
-)
-DEFAULT_SFINCS_TEMPLATE = SCRIPT_DIR / "input" / "input.HSX_vacuum_ns201_quickrun"
-DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "output" / "HSX_vacuum_ns201_quickrun"
+DEFAULT_COMMON_CONFIG = STAGES_DIR.parent / "inputs" / "quick_run" / "common_input.toml"
+DEFAULT_SFINCS_TEMPLATE = STAGES_DIR.parent / "inputs" / "quick_run" / "sfincs_input.HSX_vacuum_ns201_quickrun"
+DEFAULT_OUTPUT_DIR = STAGES_DIR.parent / "outputs" / "quick_run" / "stage3_neoclassical"
 
 
 @dataclass(frozen=True)
@@ -929,7 +927,7 @@ def _run_tasks_in_parallel(
 
 
 def cmd_main(args: argparse.Namespace) -> int:
-    config_path = Path(args.neopax_config).resolve()
+    config_path = Path(args.common_config).resolve()
     cfg = _load_toml(config_path)
     species = _parse_species_from_config(cfg)
     if str(args.profiles_source).lower() == "analytical":
@@ -1204,9 +1202,9 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
     p.add_argument(
-        "--neopax-config",
-        default=str(DEFAULT_NEOPAX_CONFIG),
-        help="Path to the NEOPAX transport TOML.",
+        "--common-config",
+        default=str(DEFAULT_COMMON_CONFIG),
+        help="Path to the shared common_input TOML.",
     )
     p.add_argument(
         "--profiles-source",

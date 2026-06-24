@@ -164,10 +164,10 @@ pixi run -e stage-2-booz-jax stage-2-booz
 ```
 
 > [!NOTE]
-> The Stage 2 JAX driver now takes explicit `--wout` and `--output` paths. Populate `stage1-equilibrium/output/` by running `pixi run stage-1-vmec` first.
+> The Stage 2 JAX driver now takes explicit `--wout` and `--output` paths. Populate `outputs/quick_run/stage1_equilibrium/` by running `pixi run stage-1-vmec` first.
 
-**Input:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` (from Stage 1)
-**Output:** `stages/stage2-boozer/output/boozmn_HSX_vacuum_ns201_quickrun.nc`
+**Input:** `outputs/quick_run/stage1_equilibrium/wout_HSX_vacuum_ns201_quickrun.nc` (from Stage 1)
+**Output:** `outputs/quick_run/stage2_boozer/boozmn_HSX_vacuum_ns201_quickrun.nc`
 
 See `docs/mvp-pipeline.md` for full I/O details.
 

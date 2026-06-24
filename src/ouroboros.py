@@ -1,4 +1,11 @@
-"""Ouroboros: closed-loop driver (Stage 5 -> Stage 1 pressure feedback)."""
+"""Ouroboros: closed-loop driver (Stage 5 -> Stage 1 pressure feedback).
+
+Runs the forward pass repeatedly, feeding each iteration's evolved Stage 1 boundary
+into the next. Every iteration is self-contained under ``<output_dir>/loop/iter_N/``:
+``input/`` holds that pass's seeded inputs and ``output/`` holds all of its stage
+outputs (including the evolved boundary and the convergence signal). The committed
+inputs under ``input_dir`` are only ever read, never modified.
+"""
 
 from __future__ import annotations
 
@@ -11,75 +18,72 @@ from pathlib import Path
 
 import yaml
 
+from .utils import resolve_pipeline_paths
+
 logger = logging.getLogger(__name__)
 
 
-def _resolve_paths(config: dict, run_name: str, repo_root: Path) -> dict[str, Path]:
-    """Resolve the per-``run_name`` files the driver reads, seeds, or chains.
-
-    Mirrors the Snakefile's ``{run_name}``-substitution of ``directories`` and
-    ``filenames`` so the driver and Snakemake agree on every path for a run.
-
-    Parameters
-    ----------
-    config : dict
-        Parsed ``config.yaml`` (must contain ``directories`` and ``filenames``).
-    run_name : str
-        Run identifier used to fill ``{run_name}`` placeholders.
-    repo_root : Path
-        Repository root; resolved paths are returned absolute under it.
-
-    Returns
-    -------
-    dict[str, Path]
-        Absolute paths for ``s1_input`` (equilibrium input / feedback target),
-        ``s3_config``/``s4_config`` (stage 3/4 templates to seed per iteration),
-        ``s5_output`` (transport solution), and ``s5_signal`` (loop status).
-    """
-    dirs = config["directories"]
-    names = config["filenames"]
-
-    def _p(dir_key: str, name_key: str) -> Path:
-        return (
-            repo_root
-            / dirs[dir_key].format(run_name=run_name)
-            / names[name_key].format(run_name=run_name)
-        )
-
-    return {
-        "s1_input": _p("stage1_input", "s1_input"),
-        "s3_config": _p("stage3_input", "s3_config"),
-        "s4_config": _p("stage4_input", "s4_config"),
-        "s5_output": _p("stage5_output", "s5_output"),
-        "s5_signal": _p("stage5_post_processing_output", "s5_signal"),
-    }
+def _abs(repo_root: Path, path: str) -> Path:
+    """Resolve a pipeline path against ``repo_root`` (absolute paths pass through)."""
+    p = Path(path)
+    return p if p.is_absolute() else repo_root / p
 
 
 def _seed(src: Path, dst: Path) -> None:
-    """Copy ``src`` to ``dst`` (creating ``dst``'s parent) to materialize a
-    run-namespaced input file for an iteration."""
+    """Copy ``src`` to ``dst``, creating ``dst``'s parent, to materialize an iteration input."""
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dst)
 
 
-def run_forward_pass(*, target: str, run_name: str, cores: int, config_path: Path, repo_root: Path) -> None:
-    """Run one full Snakemake forward pass for ``run_name``, up to ``target``.
+def _seed_iteration_inputs(
+    *,
+    repo_root: Path,
+    base_p: dict[str, str],
+    iter_p: dict[str, str],
+    s1_source: str,
+    config_path: Path,
+) -> None:
+    """Populate one iteration's ``input/`` directory.
 
-    ``--config run_name=...`` overrides the configfile, so each iteration writes
-    into its own ``{run_name}`` output tree. ``target`` is the repo-relative
-    signal file, so Snakemake runs the whole chain Stage 1 -> ... -> Stage 5 ->
-    ``stage5_post_processing`` (the in-container fit + convergence check).
+    The Stage 3/4/5 configs are copied unchanged from the base ``input_dir`` every
+    iteration, the run config is copied alongside them for reproducibility, and the
+    Stage 1 boundary comes from ``s1_source`` (the base boundary on iteration 1, the
+    previous iteration's evolved boundary thereafter).
 
-    Targeting the signal is deliberate: a bare ``snakemake`` builds the default
-    target (``rule all`` = ``S5_OUTPUT``, the transport solution) and stops at
-    Stage 5, so a plain forward pass never runs the fit or mutates a Stage 1
-    input. Naming the signal -- which depends on ``S5_OUTPUT`` -- opts into the
-    feedback step, building the full chain plus ``stage5_post_processing``.
+    Parameters
+    ----------
+    repo_root : Path
+        Repository root; pipeline paths are resolved against it.
+    base_p, iter_p : dict[str, str]
+        ``resolve_pipeline_paths`` output for the base config and for this iteration.
+    s1_source : str
+        Path to the Stage 1 boundary to seed as this iteration's ``s1_input``.
+    config_path : Path
+        Run config file, copied into the iteration input dir as a record.
     """
-    logger.info("Forward pass [%s]: snakemake %s --cores %d", run_name, target, cores)
+    for key in ("s3_config", "s4_config", "s5_config"):
+        _seed(_abs(repo_root, base_p[key]), _abs(repo_root, iter_p[key]))
+    _seed(config_path, _abs(repo_root, iter_p["input_dir"]) / config_path.name)
+    _seed(_abs(repo_root, s1_source), _abs(repo_root, iter_p["s1_input"]))
+
+
+def run_forward_pass(
+    *,
+    target: str,
+    input_dir: str,
+    output_dir: str,
+    cores: int,
+    config_path: Path,
+    repo_root: Path,
+) -> None:
+    """
+    Run one Snakemake forward pass for an iteration
+    """
+    logger.info("Forward pass [%s]: snakemake %s --cores %d", output_dir, target, cores)
     subprocess.run(
         ["snakemake", target, "--cores", str(cores),
-         "--configfile", str(config_path), "--config", f"run_name={run_name}"],
+         "--configfile", str(config_path),
+         "--config", f"input_dir={input_dir}", f"output_dir={output_dir}"],
         cwd=repo_root,
         check=True,
     )
@@ -89,8 +93,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Closed-loop driver (Stage 5 -> Stage 1 pressure feedback)."
     )
-    parser.add_argument("--config", type=Path, default=Path("config.yaml"),
-                        help="Pipeline config file (default: config.yaml).")
+    parser.add_argument("--config", type=Path, default=Path("inputs/quick_run/config.yaml"),
+                        help="Pipeline run config (default: inputs/quick_run/config.yaml).")
     parser.add_argument("--max-iters", type=int, default=3,
                         help="Number of iterations (independent forward passes) to run (default: 3).")
     parser.add_argument("--cores", type=int, default=4,
@@ -105,49 +109,38 @@ def main() -> None:
     repo_root = Path(__file__).resolve().parent.parent
     config_path = args.config if args.config.is_absolute() else repo_root / args.config
     config = yaml.safe_load(config_path.read_text())
-    base = config["run_name"]
-    loop_dir = repo_root / "stages" / "loop-output" / base
-    loop_dir.mkdir(parents=True, exist_ok=True)
-    base_paths = _resolve_paths(config, base, repo_root)
+    base_out = config["output_dir"]
+    base_p = resolve_pipeline_paths(config)
 
-    # Each iteration is an independent run '{base}_iter_N': the driver seeds that
-    # run's inputs (the equilibrium input chained from the previous iteration's
-    # fit; the stage 3/4 templates copied from the base), runs the pass, and the
-    # in-container post-processing overwrites the equilibrium input with the new
-    # fit -> the seed for the next iteration. Distinct '{base}_iter_N' output
-    # trees mean stages 3/4 recompute every iteration instead of reusing a cache.
-    prev_paths: dict[str, Path] | None = None
+    # Each iteration is an independent forward pass under '<output_dir>/loop/iter_N/'.
+    # The Stage 1 boundary comes from the previous iteration's evolved boundary. The
+    # other inputs are reseeded from the base each time. Distinct iter_N trees mean every
+    # stage recomputes each iteration instead of reusing a cache.
+    prev_p: dict[str, str] | None = None
     n = 0
     for n in range(1, args.max_iters + 1):
-        run_name = f"{base}_iter_{n}"
-        logger.info("=== Iteration %d of %d (run_name=%s) ===", n, args.max_iters, run_name)
-        p = _resolve_paths(config, run_name, repo_root)
+        iter_in = f"{base_out}/loop/iter_{n}/input"
+        iter_out = f"{base_out}/loop/iter_{n}/output"
+        logger.info("=== Iteration %d of %d (output=%s) ===", n, args.max_iters, iter_out)
+        iter_p = resolve_pipeline_paths(config, input_dir=iter_in, output_dir=iter_out)
 
-        # Seed this iteration's run-namespaced inputs.
-        src_s1 = base_paths["s1_input"] if n == 1 else prev_paths["s1_input"]
-        _seed(src_s1, p["s1_input"])
-        _seed(base_paths["s3_config"], p["s3_config"])
-        _seed(base_paths["s4_config"], p["s4_config"])
+        s1_source = base_p["s1_input"] if n == 1 else prev_p["s1_feedback"]
+        _seed_iteration_inputs(repo_root=repo_root, base_p=base_p, iter_p=iter_p,
+                               s1_source=s1_source, config_path=config_path)
 
-        # Snapshot the input feeding this pass before the rule overwrites it.
-        iter_dir = loop_dir / f"iter_{n}"
-        iter_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(p["s1_input"], iter_dir / p["s1_input"].name)
+        run_forward_pass(target=iter_p["s5_signal"], input_dir=iter_in, output_dir=iter_out,
+                         cores=args.cores, config_path=config_path, repo_root=repo_root)
 
-        # Lets the output dir point outside the repository directory (e.g. an HTCondor scratch filesystem).
-        try:
-            target = str(p["s5_signal"].relative_to(repo_root))
-        except ValueError:
-            target = str(p["s5_signal"])
-        run_forward_pass(target=target, run_name=run_name, cores=args.cores,
-                         config_path=config_path, repo_root=repo_root)
-
-        shutil.copy2(p["s5_output"], iter_dir / p["s5_output"].name)
-        prev_paths = p  # the rule overwrote p["s1_input"] with the new fit -> seeds n+1
-        if json.loads(p["s5_signal"].read_text()).get("converged"):
+        prev_p = iter_p  # post-processing wrote iter_p['s1_feedback']; it seeds iteration n+1
+        signal = json.loads(_abs(repo_root, iter_p["s5_signal"]).read_text())
+        if signal.get("halt"):
+            logger.warning("Iteration %d: Stage 5 signalled a halt (pressure not sustained); "
+                           "stopping. Restart from different initial conditions.", n)
+            break
+        if signal.get("converged"):
             logger.info("Converged at iteration %d; stopping.", n)
             break
-    logger.info("Loop finished: %d iteration(s) ('%s_iter_*'); snapshots in %s", n, base, loop_dir)
+    logger.info("Loop finished after %d iteration(s); records under %s/loop/", n, base_out)
 
 
 if __name__ == "__main__":
