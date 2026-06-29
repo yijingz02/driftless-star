@@ -213,14 +213,14 @@ pixi run stage-4-spectrax
 which executes something morally equivalent to:
 
 ```
-spectrax-gk run --config ./stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry.toml --out stage4-turbulence/output/hsx_run
+spectrax-gk run --config inputs/quick_run/HSX_vacuum_ns201_quickrun.toml --out outputs/quick_run/stage4_turbulence/hsx_run
 ```
 
-**Input:** `stages/stage1-equilibrium/output/wout_HSX_vacuum_ns201_quickrun.nc` + `stages/stage4-turbulence/input/runtime_hsx_nonlinear_vmec_geometry_quickrun.toml`
-**Output:** `stages/stage4-turbulence/output/hsx_run_quickrun.summary.json` + `stages/stage4-turbulence/output/hsx_run_quickrun.diagnostics.csv`
+**Input:** `outputs/quick_run/stage1_equilibrium/wout_HSX_vacuum_ns201_quickrun.nc` + `inputs/quick_run/HSX_vacuum_ns201_quickrun.toml`
+**Output:** `outputs/quick_run/stage4_turbulence/neopax_fluxes.h5` (+ `flux_summary.h5`, `manifest.json`, `runs.csv`)
 
 > [!NOTE]
-> The TOML's `vmec_file` points into `stage1-equilibrium/output/`. Populate this directory by running `pixi run stage-1-vmec` first. The VMEC geometry path also requires `booz_xform_jax` at runtime (lazy dependency).
+> The TOML's `vmec_file` points into `outputs/quick_run/stage1_equilibrium/`. Populate this directory by running `pixi run stage-1-vmec` first. The VMEC geometry path also requires `booz_xform_jax` at runtime (lazy dependency).
 
 See `docs/mvp-pipeline.md` for full I/O details.
 
@@ -231,7 +231,7 @@ See `docs/mvp-pipeline.md` for full I/O details.
 
 ## W&B Tracking
 
-**Project:** `stellaforge-stage4-turbulence`
+**Project:** `driftless-star-stage4-turbulence`
 
 > [!TODO]
 > Set up W&B tracking.
@@ -247,7 +247,7 @@ docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-4-spectrax s
 docker build --file stages/Dockerfile --build-arg ENVIRONMENT=stage-4-spectrax-gpu --build-arg CUDA_VERSION=12 stages/  # GPU
 ```
 
-Published to GHCR as `ghcr.io/rkhashmani/stellaforge:stage-4-spectrax-cpu` and `stage-4-spectrax-gpu`. CI builds via `.github/workflows/containers.yml`.
+Published to GHCR as `ghcr.io/driftless-star/driftless-star:stage-4-spectrax-cpu` and `stage-4-spectrax-gpu`. CI builds via `.github/workflows/containers.yml`.
 
 See [guide](../guide.md#container-architecture) for full architecture details.
 

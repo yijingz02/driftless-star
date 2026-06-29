@@ -1,34 +1,35 @@
-# StellaForge MVP pipeline configuration.
+# driftless-star pipeline run configuration.
 # CLI overrides `snakemake --config key=value` beat any value here.
 
-# Equilibrium / run identifier.
+# Independent of the input_dir/output_dir folder name; describes the physics case.
 run_name: HSX_vacuum_ns201_quickrun
 
 # Container runtime device. One of: cpu, gpu.
 device: cpu
 
-# Stage input/output directories used to construct pipeline file contracts.
-directories:
-  stage1_input: stages/stage1-equilibrium/input
-  stage1_output: stages/stage1-equilibrium/output
-  stage2_output: stages/stage2-boozer/output
-  stage3_input: stages/stage3-neoclassical/input
-  stage3_output: stages/stage3-neoclassical/output/{run_name}
-  stage4_input: stages/stage4-turbulence/input
-  stage4_output: stages/stage4-turbulence/output/{run_name}
-  stage5_input: stages/stage5-transport/input
-  stage5_output: stages/stage5-transport/output/{run_name}
 
+input_dir: inputs/quick_run
+output_dir: outputs/quick_run
+
+# Input basenames (under input_dir); output basenames (under output_dir/stageN_<name>/).
 filenames:
-  s1_input: input.{run_name}
+  s1_input: vmec_input.{run_name}      # Stage 1 VMEC INDATA namelist
   s1_output: wout_{run_name}.nc
   s2_output: boozmn_{run_name}.nc
-  s3_config: input.{run_name}
+  s3_config: sfincs_input.{run_name}   # Stage 3 SFINCS namelist
   s3_output: sfincs_jax_flux_profiles.h5
-  s4_config: "{run_name}.toml"
+  s4_config: "{run_name}.toml"         # Stage 4 SPECTRAX-GK template
   s4_output: neopax_fluxes.h5
-  s5_config: Solve_Transport_equations_noHe_radau_HSX_quickrun.toml
+  s5_config: common_input.toml         # shared by Stages 3, 4, 5
   s5_output: transport_solution.h5
+  s5_signal: converge_status.json
+
+# Convergence criteria
+# Converged when the relative RMS change of the total pressure profile between
+# the initial and final transport time slices is below this tolerance:
+#   ||P_final - P_initial|| / ||P_initial|| < pressure_rel_tol
+convergence:
+  pressure_rel_tol: 1.0e-2
 
 # Stage 3 SFINCS (sfincs_jax) radial scan.
 stage3:

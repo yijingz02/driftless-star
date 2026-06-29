@@ -1,12 +1,12 @@
-# StellaForge Guide
+# driftless-star Guide
 
 ## Project Overview
 
-StellaForge implements the stellarator design workflow described in the companion `stellarator_workflow/` submodule as a containerized, orchestrated software pipeline. The physics and I/O contracts are defined in two TeX manuscripts:
+driftless-star implements the stellarator design workflow described in the companion `stellarator_workflow/` submodule as a containerized, orchestrated software pipeline. The physics and I/O contracts are defined in two TeX manuscripts:
 - `stellarator_workflow.tex` -- governing equations and code-by-code details
 - `stellarator_io_reference.tex` -- input/output contracts and handoff specifications
 
-**Goal:** A working forward pass -- a single traversal of the pipeline from boundary Fourier coefficients and profile guesses through to transport-consistent profiles and fusion-power metrics (P_fus, Q). This is distinct from closing the optimization loop, which would feed updated pressure and current back to the equilibrium stage.
+**Goal:** A working forward pass -- a single traversal of the pipeline from boundary Fourier coefficients and profile guesses through to transport-consistent profiles and fusion-power metrics (P_fus, Q). An initial **closed loop** is now implemented on top of this: Stage 5's transport solution is fit back into the Stage 1 pressure profile and the forward pass re-run, iterating toward a transport-consistent equilibrium via the external `ouroboros` driver (see [Closing the Loop](mvp-pipeline.md#closing-the-loop)). The re-run rebuilds the equilibrium, so the updated geometry flows on to Stages 3/4. Two extensions remain future work: feeding back the **current** profile (only pressure is fit today), and using Stage 5's transport-evolved n(r)/T(r) as the Stage 3/4 kinetic profiles, which still use `profiles_source: analytical`.
 
 **JAX-first strategy:** The pipeline prioritizes JAX-native implementations for differentiability and tight integration: `vmec_jax` -> `booz_xform_jax` -> `sfincs_jax` -> `SPECTRAX-GK` -> `NEOPAX`. Other codes (`VMEC++`, `BOOZ_XFORM`, `NEO_JAX`, `NEO`, `SFINCS`, `GX`, `GENE`, `Trinity3D`) are swappable alternatives.
 
@@ -21,7 +21,7 @@ StellaForge implements the stellarator design workflow described in the companio
 |-------|---------|-------------|--------------|-----------------|------------------|
 | 1. Equilibrium | Ideal-MHD force balance | `vmec_jax`, `DESC` | `VMEC++` | INDATA/JSON boundary coefficients, pressure/iota/current coefficients, PHIEDGE | `wout_*.nc` (NetCDF) |
 | 2. Boozer Transform | Coordinate transform to Boozer angles | `booz_xform_jax` | `BOOZ_XFORM` | `wout_*.nc` | `boozmn_*.nc` (NetCDF) |
-| 3. Neoclassical | Effective ripple, drift-kinetic transport | `NEO_JAX`, `sfincs_jax` | `NEO`, `SFINCS` | `NEO_JAX`: `boozmn_*.nc`; `SFINCS`: `wout_*.nc` + input file | `neo_out.*`, `sfincsOutput.h5` |
+| 3. Neoclassical | Effective ripple, drift-kinetic transport | `NEO_JAX`, `sfincs_jax` | `NEO`, `SFINCS` | `NEO_JAX`: `boozmn_*.nc`; `SFINCS`: `wout_*.nc` + input file | `neo_out.*`, `sfincs_jax_flux_profiles.h5` |
 | 4. Turbulence | Delta-f gyrokinetic equation | `SPECTRAX-GK` | `GX`, `GENE` | Geometry + species profiles/gradients | gamma, omega, heat/particle flux (NetCDF/CSV) |
 | 5. Transport | 1D conservation laws for n_s, p_s | `NEOPAX` | `Trinity3D` | geometry + fluxes | n(r), T(r), E_r(r), P_fus, Q (HDF5/NetCDF) |
 
@@ -34,11 +34,11 @@ StellaForge implements the stellarator design workflow described in the companio
 
 Currently, most inter-stage communication is **file-based** using standard physics file formats:
 - **NetCDF** (`.nc`): equilibrium (`wout_*.nc`), Boozer (`boozmn_*.nc`), turbulence outputs
-- **HDF5** (`.h5`): neoclassical outputs (`sfincsOutput.h5`), `NEOPAX` profiles
+- **HDF5** (`.h5`): neoclassical outputs (`sfincs_jax_flux_profiles.h5`), `NEOPAX` profiles
 
 Snakemake rules define which files connect which stages. Each stage's `spec.md` is the authoritative source for required/optional fields in its output files. Where alternative implementations use different file formats or field names, a wrapper or adapter layer will be needed to translate between them.
 
-**Output directory convention:** Each stage writes to `{run_dir}/stage{N}_{name}/` on a shared volume mount.
+**Output directory convention:** Each stage writes to `outputs/<run>/stageN_<name>/` on a shared volume mount.
 
 **Key points** from the TeX manuscripts:
 
@@ -50,7 +50,7 @@ Snakemake rules define which files connect which stages. Each stage's `spec.md` 
 
 The pipeline should eventually support config-driven implementation swapping. Possible levels of swappability:
 
-- **Single-stage swap.** Change `config.yaml` to select a different implementation for one stage. The output file format should match what downstream stages expect. Example: swap Stage 4 from `SPECTRAX-GK` to `GX`.
+- **Single-stage swap.** Change `inputs/<run>/config.yaml` to select a different implementation for one stage. The output file format should match what downstream stages expect. Example: swap Stage 4 from `SPECTRAX-GK` to `GX`.
 
 - **Multi-stage swap.** A single combined Snakemake rule replaces multiple individual stage rules. It should produce all output files that downstream stages expect. Example: `DESC` can perform both equilibrium solving and Boozer transformation internally, replacing Stages 1 and 2 with a single rule.
 
@@ -60,8 +60,8 @@ The pipeline should eventually support config-driven implementation swapping. Po
 
 1. Clone the repository and initialize submodules:
    ```bash
-   git clone https://github.com/RKHashmani/StellaForge.git
-   cd StellaForge
+   git clone https://github.com/driftless-star/driftless-star.git
+   cd driftless-star
    git submodule update --init --recursive
    ```
 
@@ -134,7 +134,7 @@ Work through these steps in order. Each step should result in updates to the sta
 > Set up W&B tracking once stages are operational.
 
 Conventions:
-- **Project name:** `stellaforge-stage{N}-{name}` (e.g., `stellaforge-stage1-equilibrium`)
+- **Project name:** `driftless-star-stage{N}-{name}` (e.g., `driftless-star-stage1-equilibrium`)
 - **Run naming:** `{code}_{config}_{timestamp}` (e.g., `vmec_jax_qa_2026-04-01T12:00`)
 - **Metrics to log:** Stage-specific convergence metrics, runtime, key physics outputs (see the spec for guidance)
 - Create a dashboard with the most important panels for the stage
@@ -158,13 +158,19 @@ Place skills in the stage's docs directory (e.g., `docs/stage1-equilibrium/skill
 After Phase 1 is complete for a stage, move to containerization and testing.
 ### Container Architecture
 
-StellaForge is a **recipe repo**: it contains everything needed to build and run the containerized pipeline, but does not contain the upstream solver code itself.
+driftless-star is a **recipe repo**: it contains everything needed to build and run the containerized pipeline, but does not contain the upstream solver code itself.
 
 **Two decoupled Pixi workspaces.** The repo splits dependency management along the orchestration / physics boundary:
 - **Root `pixi.toml`** -- a single `pipeline` environment (`snakemake-minimal`, `graphviz`, `pytest`). Installed directly on the execution node; Snakemake is never containerized because nested containers are fragile and not widely supported on shared compute.
 - **`stages/pixi.toml`** -- per-stage physics environments (e.g., `stage-1-vmec`, `stage-1-vmec-gpu`) that fully specify each stack. These are only consumed by the container builder, so they are entirely isolated from the orchestration env.
 
 Each workspace has its own lockfile (`pixi.lock` / `stages/pixi.lock`).
+
+**The same boundary at the code level.** Two kinds of stage code live in the repo and should not be confused, despite the similar names:
+- **`stages/stage{N}-{name}/*.py`** -- physics scripts. Self-contained scripts that import the upstream solver and do the numerical work (e.g., radial flux scans, the Boozer transform, pressure post-processing). They run *inside* the stage containers, and `stages/` is the Docker build context.
+- **`src/stage{N}_helper.py`** -- orchestration helpers. Small modules the `Snakefile` imports on the execution node (in the root `pipeline` env, never containerized) and that contain no physics. Stages 3 and 4 compose each stage's `docker run ...` command from its `config.yaml` block; Stage 5 writes a path-resolved copy of the NEOPAX config.
+
+So `src/stage3_helper.py` *builds* the command, while `stages/stage3-neoclassical/sfincs_jax_radial_scan.py` is what that command *runs* inside the container.
 
 **Templated container images.** A single shared `stages/Dockerfile` and `stages/apptainer.def` use build arguments to select the target environment at build time:
 - `ENVIRONMENT` -- the Pixi environment name (e.g., `stage-1-vmec`, `stage-2-booz-jax-gpu`). Must be passed explicitly when building locally:
@@ -174,7 +180,7 @@ Each workspace has its own lockfile (`pixi.lock` / `stages/pixi.lock`).
 
 The Dockerfile uses a multi-stage build on a `ghcr.io/prefix-dev/pixi:noble` base image. See `stages/Dockerfile` for implementation details.
 
-**Container images** are published to GHCR at `ghcr.io/rkhashmani/stellaforge`. For MVP, the tags follow the pattern `stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). Apptainer container images are prefixed with `apptainer-`. CI builds all stage variants from the container image definition files using a GitHub Actions matrix. See `.github/workflows/containers.yml` and `.github/actions/build-docker/action.yml` for the CI setup.
+**Container images** are published to GHCR at `ghcr.io/driftless-star/driftless-star`. For MVP, the tags follow the pattern `stage-{N}-{code}-cpu` / `stage-{N}-{code}-gpu` (e.g., `stage-1-vmec-cpu`). Apptainer container images are prefixed with `apptainer-`. CI builds all stage variants from the container image definition files using a GitHub Actions matrix. See `.github/workflows/containers.yml` and `.github/actions/build-docker/action.yml` for the CI setup.
 
 **Adding or updating a stage dependency:**
 1. Update `stages/pixi.toml` (add/change the dependency or git rev)
@@ -189,7 +195,7 @@ Updating the orchestration env follows the same pattern against the root `pixi.t
 - Build and run the container locally
 - Verify it can read input files from a mounted volume
 - Verify it writes output files to the expected location on the shared volume
-- Verify the output directory follows the naming convention: `{run_dir}/stage{N}_{name}/`
+- Verify the output directory follows the naming convention: `outputs/<run>/stageN_<name>/`
 
 ### Writing Tests
 
@@ -208,7 +214,7 @@ Place tests in `tests/stage{N}-{name}/`.
 **Integration tests.** Verify that the stage's output is valid input for its downstream consumers. For example:
 - Stage 1: verify `wout_*.nc` can be read by `booz_xform_jax` (Stage 2), `sfincs_jax` (Stage 3), and `SPECTRAX-GK` (Stage 4)
 - Stage 2: verify `boozmn_*.nc` can be read by `NEO_JAX` (Stage 3)
-- Stage 3: verify `sfincsOutput.h5` (from `sfincs_jax`) can be read by `NEOPAX` (Stage 5)
+- Stage 3: verify `sfincs_jax_flux_profiles.h5` (from `sfincs_jax`) can be read by `NEOPAX` (Stage 5)
 - Stage 4: verify flux CSV output can be consumed by `NEOPAX` (Stage 5)
 - Stage 5: verify end-to-end output (`profiles.h5`: n(r), T(r), E_r(r), P_fus, Q) is produced correctly
 - Stage 5 → Stage 1: verify updated profiles from Stage 5 can be fed back as input to Stage 1 to close the optimization loop
@@ -242,7 +248,7 @@ When a stage completes Phase 2 (containerized, tested, and producing valid outpu
 > [!TODO]
 > Define the config schema and rule-selection logic.
 
-The pipeline should have a configuration file (e.g., `config.yaml`) at the repo root that controls which implementation is used per stage, stage-specific parameters, and resource requirements.
+The pipeline run configuration lives in each run folder (`inputs/<run>/config.yaml`, passed via `--configfile`) and should control which implementation is used per stage, the stage-specific parameters, and resource requirements.
 
 ### Integration Testing
 
@@ -257,7 +263,7 @@ When integrating a new stage or implementation:
 > [!TODO]
 > Set up pipeline-level W&B aggregation.
 
-- **Project:** `stellaforge-pipeline`
+- **Project:** `driftless-star-pipeline`
 - Aggregate per-stage metrics, track implementation selections, total runtime, and final physics outputs (P_fus, Q, profiles).
 
 ## How to Document I/O

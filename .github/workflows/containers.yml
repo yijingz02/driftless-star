@@ -84,7 +84,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Build Docker image
         uses: ./.github/actions/build-docker
@@ -94,7 +94,7 @@ jobs:
           cuda-version: ${{ matrix.cuda-version || '' }}
           platforms: ${{ matrix.platforms }}
           # Only deploy on the main project
-          push: ${{ github.event_name != 'pull_request' && github.repository == 'rkhashmani/stellaforge' }}
+          push: ${{ github.event_name != 'pull_request' && github.repository == 'driftless-star/driftless-star' }}
           registry-username: ${{ github.repository_owner }}
           registry-password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -113,7 +113,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Build Apptainer image
         uses: ./.github/actions/build-apptainer
@@ -122,6 +122,6 @@ jobs:
           image-tag: ${{ matrix.image-tag }}
           cuda-version: ${{ matrix.cuda-version || '' }}
           # Only deploy on the main project
-          push: ${{ github.event_name != 'pull_request' && github.repository == 'rkhashmani/stellaforge' }}
+          push: ${{ github.event_name != 'pull_request' && github.repository == 'driftless-star/driftless-star' }}
           registry-username: ${{ github.repository_owner }}
           registry-password: ${{ secrets.GITHUB_TOKEN }}
