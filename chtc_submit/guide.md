@@ -43,8 +43,8 @@ So the layering is:
 
 ## What Each File Does
 
-- `chtc-runtime.sif`
-  The built parent runtime image consumed by HTCondor `universe=container` jobs.
+- `../chtc-runtime.sif`
+  The built parent runtime image consumed by HTCondor `universe=container` jobs. Needs to be places in root.
 
 - `apptainer.def`
   Builds the parent runtime image `chtc-runtime.sif`. It can be used to created the sif container from scratch(via `apptainer build chtc-runtime.sif apptainer.def`). It provides:
