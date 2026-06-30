@@ -36,7 +36,6 @@ STAGE3_JAX_IMG = f"ghcr.io/driftless-star/driftless-star:stage-3-sfincs-{DEVICE}
 STAGE4_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-4-spectrax-{DEVICE}"
 STAGE5_IMG     = f"ghcr.io/driftless-star/driftless-star:stage-5-neopax-{DEVICE}"
 
-
 def _apptainer_bind_flags(cfg: dict) -> str:
     """Bind repo-relative workdir plus any absolute input/output roots."""
     bind_specs = ['"$PWD:/work"']

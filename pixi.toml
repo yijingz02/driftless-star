@@ -12,18 +12,8 @@ snakemake-minimal = ">=8,<10"
 graphviz = ">=9,<15"
 pytest = ">=8,<9"
 
-[feature.chtc-submit]
-channels = ["conda-forge", "bioconda"]
-
-[feature.chtc-submit.dependencies]
-snakemake-minimal = ">=8,<10"
-
-[feature.chtc-submit.target.linux-64.dependencies]
-snakemake-executor-plugin-htcondor = ">=0.2.1,<0.3"
-
 [feature.pipeline.tasks.ouroboros]
 cmd = "python -m src.ouroboros"
 
 [environments]
 pipeline = { features = ["pipeline"], no-default-feature = true }
-chtc-submit = { features = ["chtc-submit"], no-default-feature = true }
