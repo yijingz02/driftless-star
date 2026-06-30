@@ -17,7 +17,6 @@ mkdir -p "${XDG_CACHE_HOME}" "${PIXI_CACHE_DIR}"
 pixi global install apptainer git
 cd /app/
 pixi install --locked --environment {{ ENVIRONMENT }}
-/app/.pixi/envs/{{ ENVIRONMENT }}/bin/python -m pip install --no-cache-dir snakemake-executor-plugin-htcondor
 echo "#!/usr/bin/env bash" > /app/entrypoint.sh && \
 pixi shell-hook --environment {{ ENVIRONMENT }} -s bash >> /app/entrypoint.sh
 
