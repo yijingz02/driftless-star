@@ -49,6 +49,15 @@ def _apptainer_bind_flags(cfg: dict) -> str:
             bind_specs.append(f'"{p}:{p}"')
     return " ".join(f"--bind {spec}" for spec in dict.fromkeys(bind_specs))
 
+
+def _apptainer_image_ref(image: str) -> str:
+    """Map workflow image refs to native Apptainer image locations."""
+    if "://" in image or image.endswith(".sif"):
+        return image
+
+    repo, tag = image.rsplit(":", 1)
+    return f"oras://{repo}:apptainer-{tag}"
+
 # --user: make bind-mounted writes host-owned (Linux docker otherwise writes as root).
 # -e HOME=/tmp: pixi activation needs a writable HOME after dropping root.
 if CONTAINER_RUNTIME == "docker":
@@ -65,17 +74,13 @@ else:
     GPU_FLAG = "--nv " if DEVICE == "gpu" else ""
     CONTAINER_PREFIX = (
         # `--unsquash` avoids FUSE-based SIF mounts on execute nodes that do
-        # not expose /dev/fuse inside the parent HTCondor container. Use
-        # `run` so converted Docker images honor their ENTRYPOINT, which
-        # activates the Pixi environment that provides stage CLIs like
-        # `vmec_jax` and `neopax`.
+        # not expose /dev/fuse inside the parent HTCondor container.
         f'apptainer run --unsquash {GPU_FLAG}'
         f'{_apptainer_bind_flags(config)} '
         '--pwd /work '
-        'docker://'
     )
     def container_image_ref(image: str) -> str:
-        return f"{CONTAINER_PREFIX}{image}"
+        return f"{CONTAINER_PREFIX}{_apptainer_image_ref(image)}"
 
 shell.executable("bash")
 # Propagate failures through `cmd | tee {log}` pipelines so a crashed stage
@@ -148,7 +153,7 @@ rule stage3_sfincs:
     shell:
         stage3_helper.radial_scan_cmd(
             docker_prefix=CONTAINER_PREFIX,
-            image=STAGE3_JAX_IMG,
+            image=_apptainer_image_ref(STAGE3_JAX_IMG) if CONTAINER_RUNTIME == "apptainer" else STAGE3_JAX_IMG,
             stage_cfg=STAGE3_CFG,
             output_dir=P["stage3_dir"],
             device=DEVICE,
@@ -167,7 +172,7 @@ rule stage4_spectrax:
     shell:
         stage4_helper.radial_scan_cmd(
             docker_prefix=CONTAINER_PREFIX,
-            image=STAGE4_IMG,
+            image=_apptainer_image_ref(STAGE4_IMG) if CONTAINER_RUNTIME == "apptainer" else STAGE4_IMG,
             stage_cfg=STAGE4_CFG,
             output_dir=P["stage4_dir"],
             device=DEVICE,
