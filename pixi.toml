@@ -18,7 +18,6 @@ channels = ["conda-forge", "bioconda"]
 
 [feature.chtc-submit.dependencies]
 snakemake-minimal = ">=8,<10"
-pip = ">=24,<26"
 
 [feature.pipeline.tasks.ouroboros]
 cmd = "python -m src.ouroboros"
